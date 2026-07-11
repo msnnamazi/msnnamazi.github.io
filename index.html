@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mohsen Namazi | AI Engineer & Data Scientist</title>
+
+  <!-- Google Fonts: Latin (Inter) + Persian (Vazirmatn) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+
+  <style>
+    /* ===== CSS Variables (theme colors) ===== */
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --accent: #58a6ff;
+      --accent2: #bc8cff;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --border: #30363d;
+      --font-en: 'Inter', sans-serif;
+      --font-fa: 'Vazirmatn', sans-serif;
+    }
+
+    /* ===== Global reset ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-en);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: all 0.3s ease;
+    }
+
+    /* When Persian is active, <body> gets .fa class */
+    body.fa { font-family: var(--font-fa); direction: rtl; }
+
+    /* ===== Animated gradient background blob ===== */
+    .bg-glow {
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(88,166,255,0.15), transparent 60%);
+      filter: blur(60px);
+      z-index: -1;
+      animation: float 12s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(40px); }
+    }
+
+    /* ===== Navigation bar ===== */
+    nav {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: rgba(13,17,23,0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+    nav .logo { font-weight: 800; font-size: 1.2rem; color: var(--accent); }
+    nav .links { display: flex; gap: 1.5rem; align-items: center; }
+    nav a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--accent); }
+
+    /* ===== Language toggle button ===== */
+    .lang-btn {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .lang-btn:hover { transform: scale(1.05); background: var(--accent2); }
+
+    /* ===== Section layout ===== */
+    section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem;
+    }
+    h1 { font-size: 2.8rem; margin-bottom: 1rem; }
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ===== Hero section ===== */
+    .hero { text-align: center; padding-top: 6rem; }
+    .hero .roles {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+      margin: 1.5rem 0;
+    }
+    .hero .roles span {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+    .avatar {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      margin-bottom: 1.5rem;
+      object-fit: cover;
+    }
+
+    /* ===== Card grids ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent);
+      box-shadow: 0 10px 30px rgba(88,166,255,0.15);
+    }
+    .card h3 { margin-bottom: 0.6rem; color: var(--text); }
+    .card p { color: var(--muted); font-size: 0.92rem; margin-bottom: 1rem; }
+    .card a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .card a:hover { text-decoration: underline; }
+
+    /* ===== Contact buttons ===== */
+    .contact-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .contact-links a {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .contact-links a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-3px);
+    }
+
+    /* ===== Fade-in on scroll ===== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ===== Footer ===== */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    /* ===== Show/hide text based on language ===== */
+    .lang-en { display: inline; }
+    .lang-fa { display: none; }
+    body.fa .lang-en { display: none; }
+    body.fa .lang-fa { display: inline; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem; }
+      nav .links { gap: 0.8rem; }
+      nav a { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Animated background glow -->
+  <div class="bg-glow"></div>
+
+  <!-- ===== Navigation ===== -->
+  <nav>
+    <div class="logo">MN</div>
+    <div class="links">
+      <a href="#about"><span class="lang-en">About</span><span class="lang-fa">درباره من</span></a>
+      <a href="#projects"><span class="lang-en">Projects</span><span class="lang-fa">پروژه‌ها</span></a>
+      <a href="#tutorials"><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></a>
+      <a href="#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
+      <button class="lang-btn" onclick="toggleLang()">
+        <span class="lang-en">فارسی</span><span class="lang-fa">English</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <img class="avatar" src="https://github.com/mohsennamazi.png" alt="Mohsen Namazi"
+         onerror="this.src='https://ui-avatars.com/api/?name=Mohsen+Namazi&background=161b22&color=58a6ff&size=130'">
+    <h1>
+      <span class="lang-en">Mohsen Namazi</span>
+      <span class="lang-fa">محسن نمازی</span>
+    </h1>
+    <div class="roles">
+      <span class="lang-en">AI Engineer</span><span class="lang-fa">مهندس هوش مصنوعی</span>
+      <span class="lang-en">Quant</span><span class="lang-fa">کوانت</span>
+      <span class="lang-en">Data Scientist</span><span class="lang-fa">دانشمند داده</span>
+      <span class="lang-en">Bioinformatician</span><span class="lang-fa">بیوانفورماتیک</span>
+    </div>
+    <p style="color:var(--muted); max-width:600px; margin:0 auto;">
+      <span class="lang-en">Building intelligent systems at the intersection of AI, finance, and biology.</span>
+      <span class="lang-fa">ساخت سیستم‌های هوشمند در تقاطع هوش مصنوعی، مالی و زیست‌شناسی.</span>
+    </p>
+  </section>
+
+  <!-- ===== About ===== -->
+  <section id="about" class="reveal">
+    <h2><span class="lang-en">About Me</span><span class="lang-fa">درباره من</span></h2>
+    <div class="card">
+      <p style="color:var(--text)">
+        <span class="lang-en">
+          I'm Mohsen Namazi, an AI engineer, quantitative analyst, data scientist,
+          and bioinformatician. I design machine learning models, build quantitative
+          trading strategies, and analyze biological data to solve real-world problems.
+        </span>
+        <span class="lang-fa">
+          من محسن نمازی هستم؛ مهندس هوش مصنوعی، تحلیل‌گر کمی، دانشمند داده و متخصص
+          بیوانفورماتیک. مدل‌های یادگیری ماشین طراحی می‌کنم، استراتژی‌های معاملاتی
+          کمی می‌سازم و داده‌های زیستی را برای حل مسائل واقعی تحلیل می‌کنم.
+        </span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== Projects ===== -->
+  <section id="projects" class="reveal">
+    <h2><span class="lang-en">Projects</span><span class="lang-fa">پروژه‌ها</span></h2>
+    <div class="grid">
+      <div class="card">
+        <h3><span class="lang-en">AI Trading Bot</span><span class="lang-fa">ربات معاملاتی هوشمند</span></h3>
+        <p>
+          <span class="lang-en">A quantitative trading engine using deep reinforcement learning.</span>
+          <span class="lang-fa">موتور معاملاتی کمی مبتنی بر یادگیری تقویتی عمیق.</span>
+        </p>
+        <a href="https://github.com/mohsennamazi" target="_blank">
+          <span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span>
+        </a>
+      </div>
+      <div class="card">
+        <h3><span class="lang-en">Genome Analyzer</span><span class="lang-fa">تحلیل‌گر ژنوم</span></h3>
+        <p>
+          <span class="lang-en">Bioinformatics pipeline for DNA sequence analysis.</span>
+          <span class="lang-fa">خط لوله بیوانفورماتیک برای تحلیل توالی DNA.</span>
+        </p>
+        <a href="https://github.com/mohsennamazi" target="_blank">
+          <span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span>
+        </a>
+      </div>
+      <div class="card">
+        <h3><span class="lang-en">ML Toolkit</span><span class="lang-fa">جعبه‌ابزار یادگیری ماشین</span></h3>
+        <p>
+          <span class="lang-en">Reusable machine learning utilities and model templates.</span>
+          <span class="lang-fa">ابزارهای قابل‌استفاده مجدد و قالب‌های مدل یادگیری ماشین.</span>
+        </p>
+        <a href="https://github.com/mohsennamazi" target="_blank">
+          <span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Tutorials ===== -->
+  <section id="tutorials" class="reveal">
+    <h2><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></h2>
+    <div class="grid">
+      <div class="card">
+        <h3><span class="lang-en">Intro to Machine Learning</span><span class="lang-fa">مقدمه‌ای بر یادگیری ماشین</span></h3>
+        <p>
+          <span class="lang-en">A beginner-friendly guide to ML fundamentals.</span>
+          <span class="lang-fa">راهنمای مقدماتی مبانی یادگیری ماشین.</span>
+        </p>
+        <a href="#" target="_blank"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
+      </div>
+      <div class="card">
+        <h3><span class="lang-en">Quant Finance 101</span><span class="lang-fa">مالی کمی مقدماتی</span></h3>
+        <p>
+          <span class="lang-en">Building your first trading strategy in Python.</span>
+          <span class="lang-fa">ساخت اولین استراتژی معاملاتی شما در پایتون.</span>
+        </p>
+        <a href="#" target="_blank"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
+      </div>
+      <div class="card">
+        <h3><span class="lang-en">Bioinformatics with Python</span><span class="lang-fa">بیوانفورماتیک با پایتون</span></h3>
+        <p>
+          <span class="lang-en">Analyzing biological sequences step by step.</span>
+          <span class="lang-fa">تحلیل توالی‌های زیستی گام‌به‌گام.</span>
+        </p>
+        <a href="#" target="_blank"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Contact ===== -->
+  <section id="contact" class="reveal">
+    <h2><span class="lang-en">Contact</span><span class="lang-fa">تماس با من</span></h2>
+    <div class="contact-links">
+      <a href="mailto:mohsen@example.com">Email</a>
+      <a href="https://github.com/mohsennamazi" target="_blank">GitHub</a>
+      <a href="https://linkedin.com/in/mohsennamazi" target="_blank">LinkedIn</a>
+      <a href="https://twitter.com/mohsennamazi" target="_blank">Twitter / X</a>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer>
+    <span class="lang-en">© 2026 Mohsen Namazi. Built with ❤️ and code.</span>
+    <span class="lang-fa">© ۲۰۲۶ محسن نمازی. ساخته‌شده با ❤️ و کد.</span>
+  </footer>
+
+  <!-- ===== JavaScript ===== -->
+  <script>
+    // --- Language toggle ---
+    function toggleLang() {
+      const body = document.body;
+      body.classList.toggle('fa');
+      if (body.classList.contains('fa')) {
+        document.documentElement.lang = 'fa';
+        document.documentElement.dir = 'rtl';
+      } else {
+        document.documentElement.lang = 'en';
+        document.documentElement.dir = 'ltr';
+      }
+    }
+
+    // --- Fade-in on scroll (Intersection Observer) ---
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // --- Smooth scroll for nav links ---
+    document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href'))
+                .scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+  </script>
+</body>
+</html>
