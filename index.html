@@ -1,395 +1,574 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mohsen Namazi | AI Engineer & Data Scientist</title>
+  <title>Mohsen Namazi | AI · Quant · Data · Bio</title>
+  <meta name="description" content="Mohsen Namazi — AI Engineer, Quant, Data Scientist, Bioinformatician.">
 
-  <!-- Google Fonts: Latin (Inter) + Persian (Vazirmatn) -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 
+  <!-- AOS (scroll animations) -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
   <style>
-    /* ===== CSS Variables (theme colors) ===== */
-    :root {
-      --bg: #0d1117;
-      --card: #161b22;
-      --accent: #58a6ff;
-      --accent2: #bc8cff;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --border: #30363d;
-      --font-en: 'Inter', sans-serif;
-      --font-fa: 'Vazirmatn', sans-serif;
+    /* ============ THEME VARIABLES ============ */
+    :root,
+    [data-theme="dark"] {
+      --bg: #0b0f17;
+      --bg-2: #111827;
+      --card: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --text: #e8edf5;
+      --muted: #94a3b8;
+      --accent: #6ea8fe;
+      --accent-2: #b592ff;
+      --glow: rgba(110,168,254,0.25);
+      --shadow: rgba(0,0,0,0.5);
+    }
+    [data-theme="light"] {
+      --bg: #f6f8fc;
+      --bg-2: #eef2f9;
+      --card: rgba(255,255,255,0.75);
+      --card-border: rgba(15,23,42,0.08);
+      --text: #0f172a;
+      --muted: #55617a;
+      --accent: #2563eb;
+      --accent-2: #7c3aed;
+      --glow: rgba(37,99,235,0.18);
+      --shadow: rgba(15,23,42,0.12);
     }
 
-    /* ===== Global reset ===== */
+    /* ============ RESET ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--font-en);
-      line-height: 1.6;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.7;
       overflow-x: hidden;
-      transition: all 0.3s ease;
+      transition: background .4s ease, color .4s ease;
+    }
+    body.fa { font-family: 'Vazirmatn', sans-serif; direction: rtl; }
+    body.fa .en-only { direction: ltr; }
+
+    /* Particle canvas sits behind everything */
+    #tsparticles {
+      position: fixed; inset: 0; z-index: -2;
+    }
+    /* Soft radial gradient overlay */
+    .backdrop {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(600px circle at 15% 20%, var(--glow), transparent 45%),
+        radial-gradient(500px circle at 85% 70%, var(--glow), transparent 45%);
+      transition: background .4s ease;
     }
 
-    /* When Persian is active, <body> gets .fa class */
-    body.fa { font-family: var(--font-fa); direction: rtl; }
-
-    /* ===== Animated gradient background blob ===== */
-    .bg-glow {
-      position: fixed;
-      top: -20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, rgba(88,166,255,0.15), transparent 60%);
-      filter: blur(60px);
-      z-index: -1;
-      animation: float 12s ease-in-out infinite;
-    }
-    @keyframes float {
-      0%, 100% { transform: translateX(-50%) translateY(0); }
-      50% { transform: translateX(-50%) translateY(40px); }
-    }
-
-    /* ===== Navigation bar ===== */
+    /* ============ NAVBAR ============ */
     nav {
-      position: sticky;
-      top: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 2rem;
-      background: rgba(13,17,23,0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      z-index: 100;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem clamp(1rem, 4vw, 3rem);
+      background: color-mix(in srgb, var(--bg) 72%, transparent);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--card-border);
     }
-    nav .logo { font-weight: 800; font-size: 1.2rem; color: var(--accent); }
-    nav .links { display: flex; gap: 1.5rem; align-items: center; }
-    nav a {
-      color: var(--text);
-      text-decoration: none;
-      font-size: 0.95rem;
-      transition: color 0.2s;
-    }
-    nav a:hover { color: var(--accent); }
-
-    /* ===== Language toggle button ===== */
-    .lang-btn {
-      background: var(--accent);
-      color: #0d1117;
-      border: none;
-      padding: 0.4rem 0.9rem;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform 0.2s, background 0.2s;
-    }
-    .lang-btn:hover { transform: scale(1.05); background: var(--accent2); }
-
-    /* ===== Section layout ===== */
-    section {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 5rem 1.5rem;
-    }
-    h1 { font-size: 2.8rem; margin-bottom: 1rem; }
-    h2 {
-      font-size: 2rem;
-      margin-bottom: 2rem;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; font-size: 1.25rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent;
-      background-clip: text;
     }
+    .nav-links { display: flex; gap: clamp(.6rem, 2vw, 1.6rem); align-items: center; }
+    .nav-links a {
+      color: var(--text); text-decoration: none; font-size: .92rem; font-weight: 500;
+      position: relative; padding: .2rem 0; transition: color .2s;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; left: 0; bottom: -3px;
+      width: 0; height: 2px; border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .25s ease;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a:hover::after { width: 100%; }
 
-    /* ===== Hero section ===== */
-    .hero { text-align: center; padding-top: 6rem; }
-    .hero .roles {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.6rem;
-      margin: 1.5rem 0;
+    .controls { display: flex; gap: .5rem; align-items: center; }
+    .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 12px; cursor: pointer;
+      border: 1px solid var(--card-border);
+      background: var(--card); color: var(--text);
+      font-size: .85rem; font-weight: 600;
+      transition: transform .2s, border-color .2s, background .2s;
     }
-    .hero .roles span {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 0.4rem 1rem;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      color: var(--accent);
+    .icon-btn:hover { transform: translateY(-2px); border-color: var(--accent); }
+
+    /* ============ HERO ============ */
+    .hero {
+      min-height: 92vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: 2rem clamp(1rem, 5vw, 3rem);
     }
+    .avatar-ring {
+      position: relative; width: 150px; height: 150px; margin-bottom: 2rem;
+    }
+    .avatar-ring::before {
+      content: ''; position: absolute; inset: -6px; border-radius: 50%;
+      background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--accent));
+      animation: spin 6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .avatar {
-      width: 130px;
-      height: 130px;
-      border-radius: 50%;
-      border: 3px solid var(--accent);
-      margin-bottom: 1.5rem;
-      object-fit: cover;
+      position: relative; width: 150px; height: 150px; border-radius: 50%;
+      object-fit: cover; border: 4px solid var(--bg); z-index: 1;
+    }
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.4rem, 7vw, 4.5rem); font-weight: 700;
+      line-height: 1.05; margin-bottom: 1rem; letter-spacing: -1px;
+    }
+    body.fa .hero h1 { font-family: 'Vazirmatn', sans-serif; font-weight: 900; }
+    .gradient-text {
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .typed-wrap {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.1rem, 3.5vw, 1.8rem); font-weight: 500;
+      color: var(--muted); min-height: 2.4rem; margin-bottom: 1.4rem;
+    }
+    body.fa .typed-wrap { font-family: 'Vazirmatn', sans-serif; }
+    .hero p.lead {
+      max-width: 620px; color: var(--muted);
+      font-size: clamp(1rem, 2.5vw, 1.15rem); margin-bottom: 2rem;
+    }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+    .btn {
+      padding: .85rem 1.8rem; border-radius: 14px; font-weight: 600;
+      text-decoration: none; font-size: .95rem; cursor: pointer;
+      transition: transform .2s, box-shadow .2s; border: 1px solid transparent;
+    }
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      box-shadow: 0 8px 24px var(--glow);
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px var(--glow); }
+    .btn-ghost {
+      color: var(--text); background: var(--card); border-color: var(--card-border);
+    }
+    .btn-ghost:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+    /* ============ SECTIONS ============ */
+    section.block { max-width: 1080px; margin: 0 auto; padding: 5.5rem clamp(1rem, 5vw, 2rem); }
+    .section-head { text-align: center; margin-bottom: 3rem; }
+    .eyebrow {
+      text-transform: uppercase; letter-spacing: 3px; font-size: .78rem;
+      color: var(--accent); font-weight: 700; margin-bottom: .6rem;
+    }
+    .section-head h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 700; letter-spacing: -.5px;
+    }
+    body.fa .section-head h2, body.fa .eyebrow { font-family: 'Vazirmatn', sans-serif; }
+
+    /* ============ ABOUT ============ */
+    .about-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: clamp(1.5rem, 4vw, 3rem);
+      backdrop-filter: blur(10px); box-shadow: 0 20px 40px var(--shadow);
+    }
+    .about-card p { color: var(--text); font-size: 1.05rem; }
+    .stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1.2rem; margin-top: 2rem;
+    }
+    .stat { text-align: center; }
+    .stat .num {
+      font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat .label { color: var(--muted); font-size: .85rem; }
+
+    /* ============ EXPERTISE (separated domains) ============ */
+    .domains { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.6rem; }
+    .domain {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: 2rem; position: relative; overflow: hidden;
+      transition: border-color .3s;
+    }
+    .domain::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: var(--domain-color, var(--accent));
+    }
+    .domain:hover { border-color: var(--domain-color, var(--accent)); }
+    .domain .ic {
+      width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center;
+      font-size: 1.6rem; margin-bottom: 1.2rem;
+      background: color-mix(in srgb, var(--domain-color) 18%, transparent);
+    }
+    .domain h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; margin-bottom: .6rem; }
+    body.fa .domain h3 { font-family: 'Vazirmatn', sans-serif; }
+    .domain p { color: var(--muted); font-size: .93rem; margin-bottom: 1rem; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .tag {
+      font-size: .75rem; padding: .3rem .7rem; border-radius: 20px;
+      background: color-mix(in srgb, var(--domain-color) 14%, transparent);
+      color: var(--domain-color); font-weight: 600;
     }
 
-    /* ===== Card grids ===== */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.5rem;
-    }
+    /* ============ CARD GRID (projects & tutorials) ============ */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1.6rem; }
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 18px; padding: 1.8rem; transition: box-shadow .3s;
+      transform-style: preserve-3d;
     }
-    .card:hover {
-      transform: translateY(-6px);
-      border-color: var(--accent);
-      box-shadow: 0 10px 30px rgba(88,166,255,0.15);
+    .card:hover { box-shadow: 0 18px 40px var(--shadow); }
+    .card .chip {
+      display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: .8rem;
     }
-    .card h3 { margin-bottom: 0.6rem; color: var(--text); }
-    .card p { color: var(--muted); font-size: 0.92rem; margin-bottom: 1rem; }
-    .card a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9rem;
+    .card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; margin-bottom: .6rem; }
+    body.fa .card h3 { font-family: 'Vazirmatn', sans-serif; }
+    .card p { color: var(--muted); font-size: .92rem; margin-bottom: 1.2rem; }
+    .card a.link {
+      color: var(--accent); text-decoration: none; font-weight: 600; font-size: .9rem;
+      display: inline-flex; align-items: center; gap: .3rem; transition: gap .2s;
     }
-    .card a:hover { text-decoration: underline; }
+    .card a.link:hover { gap: .6rem; }
 
-    /* ===== Contact buttons ===== */
-    .contact-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
+    /* ============ CONTACT ============ */
+    .contact-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+    .contact-grid a {
+      display: flex; align-items: center; gap: .6rem;
+      background: var(--card); border: 1px solid var(--card-border);
+      padding: 1rem 1.6rem; border-radius: 14px; color: var(--text);
+      text-decoration: none; font-weight: 500; transition: transform .2s, border-color .2s;
     }
-    .contact-links a {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 0.8rem 1.5rem;
-      border-radius: 10px;
-      color: var(--text);
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .contact-links a:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      transform: translateY(-3px);
-    }
+    .contact-grid a:hover { transform: translateY(-4px); border-color: var(--accent); color: var(--accent); }
 
-    /* ===== Fade-in on scroll ===== */
-    .reveal {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-
-    /* ===== Footer ===== */
+    /* ============ FOOTER ============ */
     footer {
-      text-align: center;
-      padding: 2rem;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      font-size: 0.85rem;
+      text-align: center; padding: 2.5rem 1rem; color: var(--muted);
+      border-top: 1px solid var(--card-border); font-size: .85rem; margin-top: 3rem;
     }
 
-    /* ===== Show/hide text based on language ===== */
+    /* ============ LANGUAGE VISIBILITY ============ */
     .lang-en { display: inline; }
     .lang-fa { display: none; }
     body.fa .lang-en { display: none; }
     body.fa .lang-fa { display: inline; }
 
-    /* ===== Responsive ===== */
-    @media (max-width: 600px) {
-      h1 { font-size: 2rem; }
-      nav .links { gap: 0.8rem; }
-      nav a { font-size: 0.8rem; }
+    /* Scroll-to-top */
+    #toTop {
+      position: fixed; bottom: 24px; right: 24px; z-index: 90;
+      width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: #fff;
+      font-size: 1.2rem; opacity: 0; pointer-events: none; transition: opacity .3s, transform .2s;
+      box-shadow: 0 8px 24px var(--glow);
     }
+    body.fa #toTop { right: auto; left: 24px; }
+    #toTop.show { opacity: 1; pointer-events: auto; }
+    #toTop:hover { transform: translateY(-3px); }
   </style>
 </head>
 
 <body>
-  <!-- Animated background glow -->
-  <div class="bg-glow"></div>
+  <div id="tsparticles"></div>
+  <div class="backdrop"></div>
 
-  <!-- ===== Navigation ===== -->
-  <nav>
-    <div class="logo">MN</div>
-    <div class="links">
-      <a href="#about"><span class="lang-en">About</span><span class="lang-fa">درباره من</span></a>
+  <!-- ============ NAV ============ -->
+  <nav data-aos="fade-down">
+    <div class="logo">Mohsen&nbsp;Namazi</div>
+    <div class="nav-links">
+      <a href="#about"><span class="lang-en">About</span><span class="lang-fa">درباره</span></a>
+      <a href="#expertise"><span class="lang-en">Expertise</span><span class="lang-fa">تخصص‌ها</span></a>
       <a href="#projects"><span class="lang-en">Projects</span><span class="lang-fa">پروژه‌ها</span></a>
       <a href="#tutorials"><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></a>
       <a href="#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
-      <button class="lang-btn" onclick="toggleLang()">
-        <span class="lang-en">فارسی</span><span class="lang-fa">English</span>
+    </div>
+    <div class="controls">
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+      <button class="icon-btn" id="langBtn" onclick="toggleLang()">
+        <span class="lang-en">فا</span><span class="lang-fa">EN</span>
       </button>
     </div>
   </nav>
 
-  <!-- ===== Hero ===== -->
-  <section class="hero">
-    <img class="avatar" src="https://github.com/mohsennamazi.png" alt="Mohsen Namazi"
-         onerror="this.src='https://ui-avatars.com/api/?name=Mohsen+Namazi&background=161b22&color=58a6ff&size=130'">
-    <h1>
-      <span class="lang-en">Mohsen Namazi</span>
-      <span class="lang-fa">محسن نمازی</span>
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="avatar-ring" data-aos="zoom-in">
+      <img class="avatar" src="https://github.com/msnnamazi.png" alt="Mohsen Namazi"
+           onerror="this.src='https://ui-avatars.com/api/?name=Mohsen+Namazi&background=111827&color=6ea8fe&size=200'">
+    </div>
+    <h1 data-aos="fade-up">
+      <span class="lang-en">Hi, I'm <span class="gradient-text">Mohsen Namazi</span></span>
+      <span class="lang-fa">سلام، من <span class="gradient-text">محسن نمازی</span> هستم</span>
     </h1>
-    <div class="roles">
-      <span class="lang-en">AI Engineer</span><span class="lang-fa">مهندس هوش مصنوعی</span>
-      <span class="lang-en">Quant</span><span class="lang-fa">کوانت</span>
-      <span class="lang-en">Data Scientist</span><span class="lang-fa">دانشمند داده</span>
-      <span class="lang-en">Bioinformatician</span><span class="lang-fa">بیوانفورماتیک</span>
+    <div class="typed-wrap" data-aos="fade-up" data-aos-delay="150">
+      <span id="typed-en" class="lang-en"></span>
+      <span id="typed-fa" class="lang-fa"></span>
     </div>
-    <p style="color:var(--muted); max-width:600px; margin:0 auto;">
-      <span class="lang-en">Building intelligent systems at the intersection of AI, finance, and biology.</span>
-      <span class="lang-fa">ساخت سیستم‌های هوشمند در تقاطع هوش مصنوعی، مالی و زیست‌شناسی.</span>
+    <p class="lead" data-aos="fade-up" data-aos-delay="250">
+      <span class="lang-en">Building intelligent systems across artificial intelligence, quantitative finance, data science, and computational biology.</span>
+      <span class="lang-fa">ساخت سیستم‌های هوشمند در حوزه‌های هوش مصنوعی، مالی کمی، علم داده و زیست‌شناسی محاسباتی.</span>
     </p>
-  </section>
+    <div class="cta-row" data-aos="fade-up" data-aos-delay="350">
+      <a href="#projects" class="btn btn-primary"><span class="lang-en">View Projects</span><span class="lang-fa">مشاهده پروژه‌ها</span></a>
+      <a href="#contact" class="btn btn-ghost"><span class="lang-en">Get in Touch</span><span class="lang-fa">تماس با من</span></a>
+    </div>
+  </header>
 
-  <!-- ===== About ===== -->
-  <section id="about" class="reveal">
-    <h2><span class="lang-en">About Me</span><span class="lang-fa">درباره من</span></h2>
-    <div class="card">
-      <p style="color:var(--text)">
-        <span class="lang-en">
-          I'm Mohsen Namazi, an AI engineer, quantitative analyst, data scientist,
-          and bioinformatician. I design machine learning models, build quantitative
-          trading strategies, and analyze biological data to solve real-world problems.
-        </span>
-        <span class="lang-fa">
-          من محسن نمازی هستم؛ مهندس هوش مصنوعی، تحلیل‌گر کمی، دانشمند داده و متخصص
-          بیوانفورماتیک. مدل‌های یادگیری ماشین طراحی می‌کنم، استراتژی‌های معاملاتی
-          کمی می‌سازم و داده‌های زیستی را برای حل مسائل واقعی تحلیل می‌کنم.
-        </span>
+  <!-- ============ ABOUT ============ -->
+  <section id="about" class="block">
+    <div class="section-head" data-aos="fade-up">
+      <div class="eyebrow"><span class="lang-en">Who I am</span><span class="lang-fa">من که هستم</span></div>
+      <h2><span class="lang-en">About Me</span><span class="lang-fa">درباره من</span></h2>
+    </div>
+    <div class="about-card" data-aos="fade-up" data-aos-delay="100">
+      <p>
+        <span class="lang-en">I'm Mohsen Namazi — a multidisciplinary technologist working at the crossroads of four fields. I build machine learning systems, design quantitative trading strategies, turn raw data into decisions, and decode biological data. I love clean engineering, rigorous methods, and turning complex ideas into working software.</span>
+        <span class="lang-fa">من محسن نمازی هستم؛ متخصصی چندرشته‌ای که در تقاطع چهار حوزه فعالیت می‌کنم. سیستم‌های یادگیری ماشین می‌سازم، استراتژی‌های معاملاتی کمی طراحی می‌کنم، داده‌ی خام را به تصمیم تبدیل می‌کنم و داده‌های زیستی را رمزگشایی می‌کنم. به مهندسی تمیز، روش‌های دقیق و تبدیل ایده‌های پیچیده به نرم‌افزار کاربردی علاقه دارم.</span>
       </p>
+      <div class="stats">
+        <div class="stat"><div class="num" data-count="10">0</div><div class="label"><span class="lang-en">Years Experience</span><span class="lang-fa">سال تجربه</span></div></div>
+        <div class="stat"><div class="num" data-count="40">0</div><div class="label"><span class="lang-en">Projects</span><span class="lang-fa">پروژه</span></div></div>
+        <div class="stat"><div class="num" data-count="4">0</div><div class="label"><span class="lang-en">Domains</span><span class="lang-fa">حوزه تخصصی</span></div></div>
+        <div class="stat"><div class="num" data-count="15">0</div><div class="label"><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش</span></div></div>
+      </div>
     </div>
   </section>
 
-  <!-- ===== Projects ===== -->
-  <section id="projects" class="reveal">
-    <h2><span class="lang-en">Projects</span><span class="lang-fa">پروژه‌ها</span></h2>
+  <!-- ============ EXPERTISE (4 separated domains) ============ -->
+  <section id="expertise" class="block">
+    <div class="section-head" data-aos="fade-up">
+      <div class="eyebrow"><span class="lang-en">What I do</span><span class="lang-fa">چه می‌کنم</span></div>
+      <h2><span class="lang-en">Areas of Expertise</span><span class="lang-fa">حوزه‌های تخصص</span></h2>
+    </div>
+    <div class="domains">
+      <div class="domain" data-aos="fade-up" style="--domain-color:#6ea8fe" data-tilt>
+        <div class="ic">🤖</div>
+        <h3><span class="lang-en">AI Engineering</span><span class="lang-fa">مهندسی هوش مصنوعی</span></h3>
+        <p><span class="lang-en">Designing and deploying deep learning models and intelligent systems.</span><span class="lang-fa">طراحی و استقرار مدل‌های یادگیری عمیق و سیستم‌های هوشمند.</span></p>
+        <div class="tag-row"><span class="tag">PyTorch</span><span class="tag">LLMs</span><span class="tag">MLOps</span></div>
+      </div>
+      <div class="domain" data-aos="fade-up" data-aos-delay="100" style="--domain-color:#34d399" data-tilt>
+        <div class="ic">📈</div>
+        <h3><span class="lang-en">Quantitative Finance</span><span class="lang-fa">مالی کمی</span></h3>
+        <p><span class="lang-en">Statistical models and algorithmic strategies for financial markets.</span><span class="lang-fa">مدل‌های آماری و استراتژی‌های الگوریتمی برای بازارهای مالی.</span></p>
+        <div class="tag-row"><span class="tag">Backtesting</span><span class="tag">Risk</span><span class="tag">Alpha</span></div>
+      </div>
+      <div class="domain" data-aos="fade-up" data-aos-delay="200" style="--domain-color:#fbbf24" data-tilt>
+        <div class="ic">📊</div>
+        <h3><span class="lang-en">Data Science</span><span class="lang-fa">علم داده</span></h3>
+        <p><span class="lang-en">Extracting insight from data through analysis and visualization.</span><span class="lang-fa">استخراج بینش از داده از طریق تحلیل و مصورسازی.</span></p>
+        <div class="tag-row"><span class="tag">Pandas</span><span class="tag">SQL</span><span class="tag">Stats</span></div>
+      </div>
+      <div class="domain" data-aos="fade-up" data-aos-delay="300" style="--domain-color:#b592ff" data-tilt>
+        <div class="ic">🧬</div>
+        <h3><span class="lang-en">Bioinformatics</span><span class="lang-fa">بیوانفورماتیک</span></h3>
+        <p><span class="lang-en">Computational analysis of genomic and biological sequence data.</span><span class="lang-fa">تحلیل محاسباتی داده‌های ژنومی و توالی‌های زیستی.</span></p>
+        <div class="tag-row"><span class="tag">Genomics</span><span class="tag">NGS</span><span class="tag">Biopython</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROJECTS ============ -->
+  <section id="projects" class="block">
+    <div class="section-head" data-aos="fade-up">
+      <div class="eyebrow"><span class="lang-en">Selected work</span><span class="lang-fa">نمونه کارها</span></div>
+      <h2><span class="lang-en">Projects</span><span class="lang-fa">پروژه‌ها</span></h2>
+    </div>
     <div class="grid">
-      <div class="card">
+      <div class="card" data-aos="fade-up" data-tilt>
+        <span class="chip">AI · Quant</span>
         <h3><span class="lang-en">AI Trading Bot</span><span class="lang-fa">ربات معاملاتی هوشمند</span></h3>
-        <p>
-          <span class="lang-en">A quantitative trading engine using deep reinforcement learning.</span>
-          <span class="lang-fa">موتور معاملاتی کمی مبتنی بر یادگیری تقویتی عمیق.</span>
-        </p>
-        <a href="https://github.com/mohsennamazi" target="_blank">
-          <span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span>
-        </a>
+        <p><span class="lang-en">A quantitative trading engine powered by deep reinforcement learning.</span><span class="lang-fa">موتور معاملاتی کمی مبتنی بر یادگیری تقویتی عمیق.</span></p>
+        <a class="link" href="https://github.com/msnnamazi" target="_blank" rel="noopener"><span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span></a>
       </div>
-      <div class="card">
+      <div class="card" data-aos="fade-up" data-aos-delay="100" data-tilt>
+        <span class="chip">Bio</span>
         <h3><span class="lang-en">Genome Analyzer</span><span class="lang-fa">تحلیل‌گر ژنوم</span></h3>
-        <p>
-          <span class="lang-en">Bioinformatics pipeline for DNA sequence analysis.</span>
-          <span class="lang-fa">خط لوله بیوانفورماتیک برای تحلیل توالی DNA.</span>
-        </p>
-        <a href="https://github.com/mohsennamazi" target="_blank">
-          <span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span>
-        </a>
+        <p><span class="lang-en">A reproducible bioinformatics pipeline for DNA sequence analysis.</span><span class="lang-fa">خط لوله‌ی بازتولیدپذیر بیوانفورماتیک برای تحلیل توالی DNA.</span></p>
+        <a class="link" href="https://github.com/msnnamazi" target="_blank" rel="noopener"><span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span></a>
       </div>
-      <div class="card">
+      <div class="card" data-aos="fade-up" data-aos-delay="200" data-tilt>
+        <span class="chip">Data</span>
         <h3><span class="lang-en">ML Toolkit</span><span class="lang-fa">جعبه‌ابزار یادگیری ماشین</span></h3>
-        <p>
-          <span class="lang-en">Reusable machine learning utilities and model templates.</span>
-          <span class="lang-fa">ابزارهای قابل‌استفاده مجدد و قالب‌های مدل یادگیری ماشین.</span>
-        </p>
-        <a href="https://github.com/mohsennamazi" target="_blank">
-          <span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span>
-        </a>
+        <p><span class="lang-en">Reusable data-science utilities and model templates.</span><span class="lang-fa">ابزارهای قابل‌استفاده مجدد علم داده و قالب‌های مدل.</span></p>
+        <a class="link" href="https://github.com/msnnamazi" target="_blank" rel="noopener"><span class="lang-en">View on GitHub →</span><span class="lang-fa">مشاهده در گیت‌هاب ←</span></a>
       </div>
     </div>
   </section>
 
-  <!-- ===== Tutorials ===== -->
-  <section id="tutorials" class="reveal">
-    <h2><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></h2>
+  <!-- ============ TUTORIALS ============ -->
+  <section id="tutorials" class="block">
+    <div class="section-head" data-aos="fade-up">
+      <div class="eyebrow"><span class="lang-en">Learn with me</span><span class="lang-fa">با من بیاموزید</span></div>
+      <h2><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></h2>
+    </div>
     <div class="grid">
-      <div class="card">
+      <div class="card" data-aos="fade-up" data-tilt>
+        <span class="chip">AI</span>
         <h3><span class="lang-en">Intro to Machine Learning</span><span class="lang-fa">مقدمه‌ای بر یادگیری ماشین</span></h3>
-        <p>
-          <span class="lang-en">A beginner-friendly guide to ML fundamentals.</span>
-          <span class="lang-fa">راهنمای مقدماتی مبانی یادگیری ماشین.</span>
-        </p>
-        <a href="#" target="_blank"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
+        <p><span class="lang-en">A beginner-friendly guide to the fundamentals of ML.</span><span class="lang-fa">راهنمای مقدماتی مبانی یادگیری ماشین.</span></p>
+        <a class="link" href="#" target="_blank" rel="noopener"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
       </div>
-      <div class="card">
+      <div class="card" data-aos="fade-up" data-aos-delay="100" data-tilt>
+        <span class="chip">Quant</span>
         <h3><span class="lang-en">Quant Finance 101</span><span class="lang-fa">مالی کمی مقدماتی</span></h3>
-        <p>
-          <span class="lang-en">Building your first trading strategy in Python.</span>
-          <span class="lang-fa">ساخت اولین استراتژی معاملاتی شما در پایتون.</span>
-        </p>
-        <a href="#" target="_blank"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
+        <p><span class="lang-en">Building your first algorithmic trading strategy in Python.</span><span class="lang-fa">ساخت اولین استراتژی معاملاتی الگوریتمی در پایتون.</span></p>
+        <a class="link" href="#" target="_blank" rel="noopener"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
       </div>
-      <div class="card">
+      <div class="card" data-aos="fade-up" data-aos-delay="200" data-tilt>
+        <span class="chip">Bio</span>
         <h3><span class="lang-en">Bioinformatics with Python</span><span class="lang-fa">بیوانفورماتیک با پایتون</span></h3>
-        <p>
-          <span class="lang-en">Analyzing biological sequences step by step.</span>
-          <span class="lang-fa">تحلیل توالی‌های زیستی گام‌به‌گام.</span>
-        </p>
-        <a href="#" target="_blank"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
+        <p><span class="lang-en">Analyzing biological sequences step by step.</span><span class="lang-fa">تحلیل توالی‌های زیستی، گام‌به‌گام.</span></p>
+        <a class="link" href="#" target="_blank" rel="noopener"><span class="lang-en">Read →</span><span class="lang-fa">مطالعه ←</span></a>
       </div>
     </div>
   </section>
 
-  <!-- ===== Contact ===== -->
-  <section id="contact" class="reveal">
-    <h2><span class="lang-en">Contact</span><span class="lang-fa">تماس با من</span></h2>
-    <div class="contact-links">
-      <a href="mailto:mohsen@example.com">Email</a>
-      <a href="https://github.com/mohsennamazi" target="_blank">GitHub</a>
-      <a href="https://linkedin.com/in/mohsennamazi" target="_blank">LinkedIn</a>
-      <a href="https://twitter.com/mohsennamazi" target="_blank">Twitter / X</a>
+  <!-- ============ CONTACT ============ -->
+  <section id="contact" class="block">
+    <div class="section-head" data-aos="fade-up">
+      <div class="eyebrow"><span class="lang-en">Say hello</span><span class="lang-fa">سلام کنید</span></div>
+      <h2><span class="lang-en">Get in Touch</span><span class="lang-fa">تماس با من</span></h2>
+    </div>
+    <div class="contact-grid" data-aos="fade-up" data-aos-delay="100">
+      <a href="mailto:you@example.com">✉️ <span>Email</span></a>
+      <a href="https://github.com/msnnamazi" target="_blank" rel="noopener">💻 <span>GitHub</span></a>
+      <a href="https://linkedin.com/in/msnnamazi" target="_blank" rel="noopener">💼 <span>LinkedIn</span></a>
+      <a href="https://twitter.com/msnnamazi" target="_blank" rel="noopener">𝕏 <span>Twitter</span></a>
     </div>
   </section>
 
-  <!-- ===== Footer ===== -->
+  <!-- ============ FOOTER ============ -->
   <footer>
-    <span class="lang-en">© 2026 Mohsen Namazi. Built with ❤️ and code.</span>
-    <span class="lang-fa">© ۲۰۲۶ محسن نمازی. ساخته‌شده با ❤️ و کد.</span>
+    <span class="lang-en">© 2026 Mohsen Namazi · Designed & built with care.</span>
+    <span class="lang-fa">© ۱۴۰۴ محسن نمازی · طراحی و ساخته‌شده با دقت.</span>
   </footer>
 
-  <!-- ===== JavaScript ===== -->
+  <button id="toTop" title="Back to top">↑</button>
+
+  <!-- ============ LIBRARIES ============ -->
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/slim@3/tsparticles.slim.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/typed.js@2.1.0/dist/typed.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js"></script>
+
   <script>
-    // --- Language toggle ---
+    /* ---------- AOS init ---------- */
+    AOS.init({ duration: 800, once: true, offset: 60 });
+
+    /* ---------- VanillaTilt init ---------- */
+    VanillaTilt.init(document.querySelectorAll('[data-tilt]'), {
+      max: 8, speed: 400, glare: true, 'max-glare': 0.15
+    });
+
+    /* ---------- Typed.js (two languages) ---------- */
+    let typedEn, typedFa;
+    function startTyped() {
+      if (typedEn) typedEn.destroy();
+      if (typedFa) typedFa.destroy();
+      typedEn = new Typed('#typed-en', {
+        strings: ['AI Engineer', 'Quant', 'Data Scientist', 'Bioinformatician'],
+        typeSpeed: 70, backSpeed: 40, backDelay: 1400, loop: true
+      });
+      typedFa = new Typed('#typed-fa', {
+        strings: ['مهندس هوش مصنوعی', 'کوانت', 'دانشمند داده', 'متخصص بیوانفورماتیک'],
+        typeSpeed: 70, backSpeed: 40, backDelay: 1400, loop: true
+      });
+    }
+    startTyped();
+
+    /* ---------- Theme toggle (dark / light) ---------- */
+    const themeBtn = document.getElementById('themeBtn');
+    const root = document.documentElement;
+    function setTheme(mode) {
+      root.setAttribute('data-theme', mode);
+      themeBtn.textContent = mode === 'dark' ? '🌙' : '☀️';
+      localStorage.setItem('theme', mode);
+      loadParticles(mode); // refresh particle colors
+    }
+    themeBtn.addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+    });
+
+    /* ---------- Language toggle ---------- */
     function toggleLang() {
       const body = document.body;
       body.classList.toggle('fa');
-      if (body.classList.contains('fa')) {
-        document.documentElement.lang = 'fa';
-        document.documentElement.dir = 'rtl';
-      } else {
-        document.documentElement.lang = 'en';
-        document.documentElement.dir = 'ltr';
-      }
+      const isFa = body.classList.contains('fa');
+      root.lang = isFa ? 'fa' : 'en';
+      root.dir  = isFa ? 'rtl' : 'ltr';
+      localStorage.setItem('lang', isFa ? 'fa' : 'en');
     }
 
-    // --- Fade-in on scroll (Intersection Observer) ---
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) entry.target.classList.add('visible');
+    /* ---------- tsParticles ---------- */
+    function loadParticles(mode) {
+      const color = mode === 'dark' ? '#6ea8fe' : '#2563eb';
+      tsParticles.load('tsparticles', {
+        fpsLimit: 60,
+        particles: {
+          number: { value: 55, density: { enable: true, area: 800 } },
+          color: { value: color },
+          links: { enable: true, color: color, distance: 140, opacity: 0.25, width: 1 },
+          move: { enable: true, speed: 1, outModes: 'bounce' },
+          opacity: { value: 0.4 },
+          size: { value: { min: 1, max: 3 } }
+        },
+        interactivity: {
+          events: { onHover: { enable: true, mode: 'grab' } },
+          modes: { grab: { distance: 160, links: { opacity: 0.4 } } }
+        },
+        detectRetina: true
       });
-    }, { threshold: 0.15 });
+    }
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-    // --- Smooth scroll for nav links ---
-    document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.querySelector(this.getAttribute('href'))
-                .scrollIntoView({ behavior: 'smooth' });
+    /* ---------- Animated stat counters ---------- */
+    function animateCount(el) {
+      const target = +el.dataset.count;
+      let n = 0;
+      const step = Math.max(1, Math.floor(target / 40));
+      const timer = setInterval(() => {
+        n += step;
+        if (n >= target) { n = target; clearInterval(timer); }
+        el.textContent = n + '+';
+      }, 30);
+    }
+    const statObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { animateCount(e.target); statObserver.unobserve(e.target); }
       });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('.num[data-count]').forEach(el => statObserver.observe(el));
+
+    /* ---------- Scroll-to-top button ---------- */
+    const toTop = document.getElementById('toTop');
+    window.addEventListener('scroll', () => {
+      toTop.classList.toggle('show', window.scrollY > 500);
+    });
+    toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    /* ---------- Restore saved preferences ---------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      setTheme(savedTheme);
+      if (localStorage.getItem('lang') === 'fa') toggleLang();
     });
   </script>
 </body>
