@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generative AI &amp; Agents Tutorial | Mohsen Namazi</title>
+  <meta name="description" content="A friendly walkthrough of how large language models grew into agents, and where LangChain fits — Part 1.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800;900&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+
+  <style>
+    :root, [data-theme="dark"] {
+      --bg:#0b0f17; --bg-2:#111827; --card:rgba(255,255,255,.04); --card-border:rgba(255,255,255,.08);
+      --text:#e8edf5; --muted:#94a3b8; --accent:#6ea8fe; --accent-2:#b592ff;
+      --glow:rgba(110,168,254,.25); --shadow:rgba(0,0,0,.5); --code-bg:#0d1220;
+    }
+    [data-theme="light"] {
+      --bg:#f6f8fc; --bg-2:#eef2f9; --card:rgba(255,255,255,.75); --card-border:rgba(15,23,42,.08);
+      --text:#0f172a; --muted:#55617a; --accent:#2563eb; --accent-2:#7c3aed;
+      --glow:rgba(37,99,235,.18); --shadow:rgba(15,23,42,.12); --code-bg:#1a2233;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.75;overflow-x:hidden;transition:background .4s,color .4s}
+    body.fa{font-family:'Vazirmatn',sans-serif;direction:rtl}
+    #tsparticles{position:fixed;inset:0;z-index:-2}
+    .backdrop{position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background:radial-gradient(600px circle at 15% 20%,var(--glow),transparent 45%),radial-gradient(500px circle at 85% 70%,var(--glow),transparent 45%);transition:background .4s}
+    nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;
+      padding:1rem clamp(1rem,4vw,3rem);background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--card-border)}
+    .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.25rem;text-decoration:none;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;display:inline-flex;align-items:center;gap:.5rem}
+    .logo .home-ico{-webkit-text-fill-color:initial;font-size:1.1rem}
+    .nav-links{display:flex;gap:clamp(.6rem,2vw,1.4rem);align-items:center}
+    .nav-links a{color:var(--text);text-decoration:none;font-size:.92rem;font-weight:500;position:relative;padding:.2rem 0;transition:color .2s}
+    .nav-links a::after{content:'';position:absolute;left:0;bottom:-3px;width:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s}
+    .nav-links a:hover{color:var(--accent)} .nav-links a:hover::after{width:100%}
+    .controls{display:flex;gap:.5rem;align-items:center}
+    .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;cursor:pointer;
+      border:1px solid var(--card-border);background:var(--card);color:var(--text);font-size:.85rem;font-weight:600;transition:transform .2s,border-color .2s}
+    .icon-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+    .home-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;border-radius:12px;border:1px solid var(--card-border);background:var(--card);color:var(--text);text-decoration:none;font-size:.88rem;font-weight:600;transition:transform .2s,border-color .2s,color .2s}
+    .home-btn:hover{transform:translateY(-2px);border-color:var(--accent);color:var(--accent)} .home-btn::after{display:none}
+    .wrap{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:280px 1fr;gap:2.5rem;padding:2.5rem clamp(1rem,4vw,2rem)}
+    @media(max-width:900px){.wrap{grid-template-columns:1fr}.toc{display:none}}
+    .toc{position:sticky;top:90px;align-self:start;background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:1.4rem;backdrop-filter:blur(10px);max-height:calc(100vh - 120px);overflow-y:auto}
+    .toc h4{font-family:'Space Grotesk',sans-serif;font-size:.8rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:1rem}
+    body.fa .toc h4{font-family:'Vazirmatn',sans-serif}
+    .toc a{display:block;color:var(--muted);text-decoration:none;font-size:.86rem;padding:.34rem 0;transition:color .2s,padding .2s}
+    .toc a:hover,.toc a.active{color:var(--accent);padding-inline-start:.4rem}
+    .toc-home{display:block;margin-bottom:.9rem;padding:.5rem .7rem;border-radius:10px;border:1px solid var(--card-border);background:color-mix(in srgb,var(--accent) 8%,transparent);color:var(--accent)!important;font-weight:600;font-size:.84rem}
+    .toc-home:hover{padding-inline-start:.7rem!important}
+    article{min-width:0}
+    .hero-head{margin-bottom:2.5rem}
+    .eyebrow{text-transform:uppercase;letter-spacing:3px;font-size:.78rem;color:var(--accent);font-weight:700;margin-bottom:.6rem}
+    .hero-head h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,6vw,3.2rem);font-weight:700;letter-spacing:-1px;line-height:1.1;margin-bottom:1rem}
+    body.fa .hero-head h1,body.fa .eyebrow{font-family:'Vazirmatn',sans-serif}
+    .gradient-text{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .hero-head p{color:var(--muted);font-size:1.1rem;max-width:680px}
+    .meta{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
+    .meta .tag{font-size:.75rem;padding:.35rem .8rem;border-radius:20px;font-weight:600;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+    .doc-section{margin-bottom:3rem;scroll-margin-top:90px}
+    .doc-section h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.4rem,4vw,2rem);font-weight:700;margin-bottom:1rem;letter-spacing:-.5px;display:flex;align-items:center;gap:.6rem}
+    body.fa .doc-section h2{font-family:'Vazirmatn',sans-serif}
+    .doc-section h2 .n{font-size:.9rem;min-width:30px;height:30px;border-radius:8px;display:inline-grid;place-items:center;color:#fff;background:linear-gradient(120deg,var(--accent),var(--accent-2))}
+    .doc-section h3{font-family:'Space Grotesk',sans-serif;font-size:1.15rem;margin:1.8rem 0 .7rem;color:var(--text);font-weight:700}
+    body.fa .doc-section h3{font-family:'Vazirmatn',sans-serif}
+    .doc-section p{color:var(--text);margin-bottom:1rem}
+    .doc-section ul{color:var(--text);margin:0 0 1rem;padding-inline-start:1.4rem}
+    .doc-section li{margin-bottom:.4rem}
+    .doc-section code:not([class*="language-"]){font-family:'JetBrains Mono',monospace;font-size:.85em;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);padding:.12rem .4rem;border-radius:6px}
+    .note{background:color-mix(in srgb,var(--accent) 10%,transparent);border-inline-start:4px solid var(--accent);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0;color:var(--text);font-size:.95rem}
+    .note.warn{background:color-mix(in srgb,#f5a524 12%,transparent);border-inline-start-color:#f5a524}
+    .note.tip{background:color-mix(in srgb,#34d399 12%,transparent);border-inline-start-color:#34d399}
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1.4rem 0}
+    .concept-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:1.2rem;transition:transform .2s,border-color .2s}
+    .concept-card:hover{transform:translateY(-4px);border-color:var(--accent)}
+    .concept-card .ico{font-size:1.6rem;margin-bottom:.5rem}
+    .concept-card h5{font-family:'Space Grotesk',sans-serif;font-size:1rem;margin-bottom:.4rem;color:var(--text)}
+    body.fa .concept-card h5{font-family:'Vazirmatn',sans-serif}
+    .concept-card p{font-size:.85rem;color:var(--muted);margin:0}
+    .tbl-wrap{overflow-x:auto;margin:1.2rem 0;border-radius:12px;border:1px solid var(--card-border)}
+    table.doc-tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+    table.doc-tbl th,table.doc-tbl td{padding:.7rem .9rem;text-align:start;border-bottom:1px solid var(--card-border);vertical-align:top}
+    table.doc-tbl th{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text);font-weight:700;font-family:'Space Grotesk',sans-serif}
+    body.fa table.doc-tbl th{font-family:'Vazirmatn',sans-serif}
+    table.doc-tbl tr:last-child td{border-bottom:none}
+    .code-wrap{position:relative;margin:1.2rem 0;border:1px solid var(--card-border);border-radius:14px;overflow:hidden;background:var(--code-bg)}
+    .code-head{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background:rgba(255,255,255,.03);border-bottom:1px solid var(--card-border);gap:.5rem;flex-wrap:wrap}
+    .code-head .fname{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);display:inline-flex;align-items:center;gap:.5rem}
+    .copy-btn{background:transparent;border:1px solid var(--card-border);color:var(--muted);border-radius:8px;padding:.3rem .7rem;font-size:.75rem;cursor:pointer;font-family:'Inter',sans-serif;transition:color .2s,border-color .2s;display:inline-flex;align-items:center;gap:.35rem}
+    body.fa .copy-btn{font-family:'Vazirmatn',sans-serif}
+    .copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+    .code-wrap pre{margin:0;direction:ltr;text-align:left}
+    .code-wrap pre code{font-family:'JetBrains Mono',monospace!important;font-size:.86rem;line-height:1.6}
+    .cap-badge{font-family:'Inter',sans-serif;font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:.12rem .5rem;border-radius:20px;white-space:nowrap}
+    body.fa .cap-badge{font-family:'Vazirmatn',sans-serif}
+    .cap-local{background:color-mix(in srgb,#f5a524 22%,transparent);color:#f5a524}
+    .timeline{list-style:none;padding:0;margin:1.4rem 0;position:relative}
+    .timeline::before{content:'';position:absolute;inset-inline-start:9px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--accent),var(--accent-2))}
+    .timeline li{position:relative;padding-inline-start:2rem;margin-bottom:1rem}
+    .timeline li::before{content:'';position:absolute;inset-inline-start:2px;top:.45rem;width:16px;height:16px;border-radius:50%;background:var(--bg);border:3px solid var(--accent)}
+    .timeline .yr{font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--accent);margin-inline-end:.5rem}
+    body.fa .timeline .yr{font-family:'Vazirmatn',sans-serif}
+    .next-cta{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:1.5rem;margin:2rem 0}
+    .next-cta .txt h4{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;margin-bottom:.2rem}
+    body.fa .next-cta .txt h4{font-family:'Vazirmatn',sans-serif}
+    .next-cta .txt p{color:var(--muted);font-size:.9rem;margin:0}
+    .next-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 1.5rem;border-radius:12px;text-decoration:none;font-weight:700;color:#fff;background:linear-gradient(120deg,var(--accent),var(--accent-2));white-space:nowrap;transition:transform .2s,box-shadow .2s;box-shadow:0 8px 24px var(--glow)}
+    .next-btn:hover{transform:translateY(-3px)}
+    footer{text-align:center;padding:2.5rem 1rem;color:var(--muted);border-top:1px solid var(--card-border);font-size:.85rem}
+    .footer-nav{display:flex;gap:1rem;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+    .footer-nav a{color:var(--accent);text-decoration:none;font-weight:600;font-size:.9rem}
+    .lang-en{display:inline} .lang-fa{display:none}
+    body.fa .lang-en{display:none} body.fa .lang-fa{display:inline}
+    p.lang-en,p.lang-fa,li.lang-en,li.lang-fa,ul.lang-en,ul.lang-fa,h3.lang-en,h3.lang-fa{display:none}
+    body:not(.fa) p.lang-en,body:not(.fa) li.lang-en,body:not(.fa) ul.lang-en,body:not(.fa) h3.lang-en{display:block}
+    body.fa p.lang-fa,body.fa li.lang-fa,body.fa ul.lang-fa,body.fa h3.lang-fa{display:block}
+    #progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));z-index:200;transition:width .1s}
+    #toTop{position:fixed;bottom:24px;right:24px;z-index:90;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;font-size:1.2rem;opacity:0;pointer-events:none;transition:opacity .3s,transform .2s;box-shadow:0 8px 24px var(--glow)}
+    body.fa #toTop{right:auto;left:24px} #toTop.show{opacity:1;pointer-events:auto} #toTop:hover{transform:translateY(-3px)}
+  </style>
+</head>
+
+<body>
+  <div id="progress"></div>
+  <div id="tsparticles"></div>
+  <div class="backdrop"></div>
+
+  <nav>
+    <a class="logo" href="https://msnnamazi.github.io"><span class="home-ico">🏠</span> Mohsen&nbsp;Namazi</a>
+    <div class="nav-links">
+      <a class="home-btn" href="https://msnnamazi.github.io"><span class="lang-en">← Home</span><span class="lang-fa">خانه →</span></a>
+      <a href="https://msnnamazi.github.io/tutorials/index.html"><span class="lang-en">All Tutorials</span><span class="lang-fa">همه آموزش‌ها</span></a>
+      <a href="https://msnnamazi.github.io#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
+    </div>
+    <div class="controls">
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+      <button class="icon-btn" id="langBtn" onclick="toggleLang()"><span class="lang-en">فا</span><span class="lang-fa">EN</span></button>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <aside class="toc" data-aos="fade-right">
+      <a class="toc-home" href="https://msnnamazi.github.io"><span class="lang-en">← Back to Home</span><span class="lang-fa">→ بازگشت به خانه</span></a>
+      <h4><span class="lang-en">Contents · Part 1</span><span class="lang-fa">فهرست · بخش ۱</span></h4>
+      <a href="#sec1"><span class="lang-en">1. Why This Journey Matters</span><span class="lang-fa">۱. چرا این مسیر مهم است</span></a>
+      <a href="#sec2"><span class="lang-en">2. The Modern LLM World</span><span class="lang-fa">۲. دنیای مدل‌های زبانی امروز</span></a>
+      <a href="#sec3"><span class="lang-en">3. Where Raw LLMs Fall Short</span><span class="lang-fa">۳. جایی که مدل‌های خام کم می‌آورند</span></a>
+      <a href="#sec4"><span class="lang-en">4. From Models to Agents</span><span class="lang-fa">۴. از مدل تا عامل هوشمند</span></a>
+      <a href="#sec5"><span class="lang-en">5. Meet LangChain</span><span class="lang-fa">۵. آشنایی با LangChain</span></a>
+      <a href="#sec6"><span class="lang-en">6. Wrap-up &amp; What's Next</span><span class="lang-fa">۶. جمع‌بندی و ادامه</span></a>
+    </aside>
+
+    <article>
+      <div class="hero-head" data-aos="fade-up">
+        <div class="eyebrow"><span class="lang-en">Generative AI · Part 1 of 2</span><span class="lang-fa">هوش مصنوعی مولد · بخش ۱ از ۲</span></div>
+        <h1>
+          <span class="lang-en">From Language Models to <span class="gradient-text">Intelligent Agents</span></span>
+          <span class="lang-fa">از مدل‌های زبانی تا <span class="gradient-text">عامل‌های هوشمند</span></span>
+        </h1>
+        <p>
+          <span class="lang-en">Relax and take it easy — we'll gently walk from what a language model actually is, to why the world got excited, to the moment these models learned to <em>act</em>. No prior magic required. By the end of Part 1, the whole picture will click into place.</span>
+          <span class="lang-fa">راحت باش و آرام پیش برو — قدم‌به‌قدم از این‌که یک مدل زبانی واقعاً چیست شروع می‌کنیم، به این‌که چرا همه هیجان‌زده شدند می‌رسیم، و به لحظه‌ای که این مدل‌ها یاد گرفتند <em>عمل کنند</em>. هیچ دانش قبلی لازم نیست. تا پایان بخش ۱، همه‌چیز سر جایش می‌نشیند.</span>
+        </p>
+        <div class="meta">
+          <span class="tag">LLM</span><span class="tag">Agents</span><span class="tag">LangChain</span><span class="tag">LangGraph</span><span class="tag">Beginner-friendly</span>
+        </div>
+      </div>
+
+      <!-- ===== SECTION 1 ===== -->
+      <section id="sec1" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">1</span><span class="lang-en">Why This Journey Matters</span><span class="lang-fa">چرا این مسیر مهم است</span></h2>
+
+        <p class="lang-en">Here's a friendly truth to start with: building an AI demo that <em>looks</em> impressive is easy, but building one you'd trust to run every day is a different sport entirely. Surveys of teams shipping AI to real users keep landing on the same worry — the quality of what the system produces — while far fewer teams have set up a reliable way to <em>measure</em> that quality. That gap between "cool demo" and "dependable product" is exactly what this tutorial helps you cross.</p>
+        <p class="lang-fa">با یک حقیقت دوستانه شروع کنیم: ساختن یک نمونه‌ی هوش مصنوعی که <em>خیره‌کننده به نظر برسد</em> آسان است، اما ساختن چیزی که هر روز به آن اعتماد کنی داستان کاملاً متفاوتی است. نظرسنجی‌ها از تیم‌هایی که هوش مصنوعی را برای کاربران واقعی منتشر می‌کنند، مدام به یک نگرانی مشترک می‌رسند — کیفیت خروجی سیستم — در حالی که تیم‌های خیلی کمتری راهی مطمئن برای <em>سنجش</em> این کیفیت راه‌اندازی کرده‌اند. عبور از همین فاصله بین «نمونه‌ی جذاب» و «محصول قابل‌اعتماد» است که این آموزش به تو کمک می‌کند.</p>
+
+        <p class="lang-en">Throughout these two parts we'll lean on three friends that work beautifully together: <strong>LangChain</strong> for assembling the pieces, <strong>LangGraph</strong> for orchestrating agents that stay reliable, and <strong>LangSmith</strong> for seeing clearly what's happening inside. Part 1 (this page) builds your mental model. Part 2 gets your hands on the keyboard.</p>
+        <p class="lang-fa">در طول این دو بخش، به سه دوست تکیه می‌کنیم که به‌زیبایی در کنار هم کار می‌کنند: <strong>LangChain</strong> برای کنار هم چیدن اجزا، <strong>LangGraph</strong> برای هماهنگ‌کردن عامل‌هایی که قابل‌اعتماد می‌مانند، و <strong>LangSmith</strong> برای دیدن شفافِ آنچه درون سیستم می‌گذرد. بخش ۱ (همین صفحه) مدل ذهنی‌ات را می‌سازد. بخش ۲ دستانت را روی کیبورد می‌گذارد.</p>
+
+        <div class="card-grid">
+          <div class="concept-card">
+            <div class="ico">🧩</div>
+            <h5><span class="lang-en">LangChain</span><span class="lang-fa">لنگ‌چین</span></h5>
+            <p><span class="lang-en">Ready-made building blocks and one consistent interface across many model vendors.</span><span class="lang-fa">بلوک‌های آماده و یک رابط یکدست میان فروشندگان مختلف مدل.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">🕸️</div>
+            <h5><span class="lang-en">LangGraph</span><span class="lang-fa">لنگ‌گراف</span></h5>
+            <p><span class="lang-en">Lets a model steer part of the workflow while you keep the system dependable.</span><span class="lang-fa">به مدل اجازه می‌دهد بخشی از جریان کار را هدایت کند، در حالی که سیستم قابل‌اتکا می‌ماند.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">🔍</div>
+            <h5><span class="lang-en">LangSmith</span><span class="lang-fa">لنگ‌اسمیت</span></h5>
+            <p><span class="lang-en">A window into your app — trace, test, and debug complicated agent behavior.</span><span class="lang-fa">پنجره‌ای به درون اپلیکیشن — ردیابی، آزمون و اشکال‌زدایی رفتار پیچیده‌ی عامل‌ها.</span></p>
+          </div>
+        </div>
+
+        <div class="note tip">
+          <span class="lang-en">💡 <strong>Tip:</strong> You don't need to memorize anything here. Just read for the feeling of it — the details will stick naturally once you start coding in Part 2.</span>
+          <span class="lang-fa">💡 <strong>نکته:</strong> لازم نیست چیزی را حفظ کنی. فقط برای درک کلی بخوان — وقتی در بخش ۲ کدنویسی را شروع کنی، جزئیات خودشان جا می‌افتند.</span>
+        </div>
+      </section>
+
+      <!-- ===== SECTION 2 ===== -->
+      <section id="sec2" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">2</span><span class="lang-en">The Modern LLM World</span><span class="lang-fa">دنیای مدل‌های زبانی امروز</span></h2>
+
+        <p class="lang-en">For decades, most AI systems were <em>sorters</em> — they'd label an email as spam or predict tomorrow's weather. Generative AI flipped the script: instead of only classifying what already exists, it <strong>creates</strong> new things — sentences, images, code — by drawing on patterns learned from enormous piles of data.</p>
+        <p class="lang-fa">دهه‌ها بیشتر سیستم‌های هوش مصنوعی <em>دسته‌بند</em> بودند — یک ایمیل را هرزنامه برچسب می‌زدند یا هوای فردا را پیش‌بینی می‌کردند. هوش مصنوعی مولد ورق را برگرداند: به‌جای این‌که فقط چیزهای موجود را طبقه‌بندی کند، چیزهای <strong>تازه</strong> می‌سازد — جملات، تصاویر، کد — با تکیه بر الگوهایی که از انبوه عظیمی از داده آموخته است.</p>
+
+        <h3 class="lang-en">A quick tour through the years</h3>
+        <h3 class="lang-fa">یک گشت‌وگذار سریع در طول سال‌ها</h3>
+        <p class="lang-en">The turning point was a 2017 design called the <strong>transformer</strong>, which gave models a much sharper sense of context — how words relate across a whole passage. As researchers grew these models from millions to billions of internal "knobs" (parameters), something surprising happened: bigger models didn't just get a little better, they picked up brand-new skills nobody hand-coded, like learning from a couple of examples or reasoning through a problem.</p>
+        <p class="lang-fa">نقطه‌ی عطف، طراحی‌ای در سال ۲۰۱۷ به نام <strong>ترنسفورمر</strong> بود که به مدل‌ها حس بسیار دقیق‌تری از بافت داد — این‌که کلمات در سرتاسر یک متن چطور با هم مرتبط‌اند. وقتی پژوهشگران این مدل‌ها را از میلیون‌ها به میلیاردها «پیچ» درونی (پارامتر) بزرگ کردند، اتفاقی شگفت‌انگیز رخ داد: مدل‌های بزرگ‌تر فقط کمی بهتر نشدند، بلکه مهارت‌های کاملاً تازه‌ای پیدا کردند که کسی دستی برنامه‌نویسی‌شان نکرده بود، مثل یادگیری از چند نمونه یا استدلال روی یک مسئله.</p>
+
+        <ul class="timeline">
+          <li class="lang-en"><span class="yr">2017</span> The transformer arrives; self-attention reshapes how machines read language.</li>
+          <li class="lang-fa"><span class="yr">۲۰۱۷</span> ترنسفورمر می‌آید؛ خودتوجهی شیوه‌ی خواندن زبان توسط ماشین را دگرگون می‌کند.</li>
+          <li class="lang-en"><span class="yr">2018–2020</span> Models like BERT and the early GPT family show both understanding and generation, and public curiosity grows.</li>
+          <li class="lang-fa"><span class="yr">۲۰۱۸–۲۰۲۰</span> مدل‌هایی مثل BERT و نسل اولیه‌ی GPT هم درک و هم تولید را نشان می‌دهند و کنجکاوی عمومی رشد می‌کند.</li>
+          <li class="lang-en"><span class="yr">2022</span> A chat-style model reaches the mainstream, and suddenly everyone is talking to AI.</li>
+          <li class="lang-fa"><span class="yr">۲۰۲۲</span> یک مدل گفت‌وگومحور فراگیر می‌شود و ناگهان همه دارند با هوش مصنوعی حرف می‌زنند.</li>
+          <li class="lang-en"><span class="yr">2023+</span> Multimodal models handle text, images, and audio together; open-weight models spread powerful AI far beyond a handful of big companies.</li>
+          <li class="lang-fa"><span class="yr">۲۰۲۳ به بعد</span> مدل‌های چندوجهی متن، تصویر و صدا را با هم پردازش می‌کنند؛ مدل‌های وزن‌باز، هوش مصنوعی قدرتمند را فراتر از چند شرکت بزرگ گسترش می‌دهند.</li>
+        </ul>
+
+        <div class="note">
+          <span class="lang-en">📌 <strong>Two words worth knowing early:</strong> a <strong>tool</strong> is an external helper a model can call — a search engine, a calculator, a database — to do things it can't do on its own. <strong>Memory</strong> is how an app remembers earlier parts of a conversation so it doesn't start from scratch every message.</span>
+          <span class="lang-fa">📌 <strong>دو واژه که خوب است زود بشناسی:</strong> <strong>ابزار</strong> یاری‌رسانی بیرونی است که مدل می‌تواند صدایش بزند — یک موتور جست‌وجو، ماشین‌حساب یا پایگاه‌داده — تا کارهایی را انجام دهد که خودش نمی‌تواند. <strong>حافظه</strong> شیوه‌ای است که اپلیکیشن بخش‌های پیشین گفت‌وگو را به یاد می‌آورد تا هر پیام را از صفر شروع نکند.</span>
+        </div>
+
+        <h3 class="lang-en">Bigger isn't the only path anymore</h3>
+        <h3 class="lang-fa">دیگر بزرگ‌ترشدن تنها راه نیست</h3>
+        <p class="lang-en">For a while, the recipe seemed simple: more parameters, more data, more compute — better results. Those "scaling laws" (studied by Kaplan and colleagues, and refined in the Chinchilla work) really do describe a lot. But here's the encouraging twist: recent research shows that <em>clean, high-quality data</em> and smarter architecture can let a small model punch far above its weight. A tidy model trained on excellent material can rival much larger ones. Tricks like fine-tuning, quantization, and distillation help small models borrow the strengths of the giants without the giant costs.</p>
+        <p class="lang-fa">مدتی دستور کار ساده به نظر می‌رسید: پارامتر بیشتر، داده‌ی بیشتر، محاسبات بیشتر — نتیجه‌ی بهتر. این «قوانین مقیاس‌پذیری» (که کاپلان و همکارانش بررسی کردند و در کار چینچیلا پالوده شد) واقعاً بخش زیادی را توصیف می‌کنند. اما یک چرخش دلگرم‌کننده هم هست: پژوهش‌های تازه نشان می‌دهند که <em>داده‌ی تمیز و باکیفیت</em> و معماری هوشمندانه‌تر می‌تواند به یک مدل کوچک اجازه دهد بسیار فراتر از وزنش عمل کند. تکنیک‌هایی مثل تنظیم‌دقیق، کوانتیزه‌سازی و تقطیر کمک می‌کنند مدل‌های کوچک قوت‌های غول‌ها را قرض بگیرند، بی‌آنکه هزینه‌ی غول‌آسا بپردازند.</p>
+
+        <h3 class="lang-en">Who makes these models?</h3>
+        <h3 class="lang-fa">چه کسانی این مدل‌ها را می‌سازند؟</h3>
+        <p class="lang-en">You can reach models from a growing crowd of providers, each with its own flavor. Your choice shapes your development experience, your speed and quality, and your bill. Here's a friendly snapshot:</p>
+        <p class="lang-fa">می‌توانی به مدل‌های شمار فزاینده‌ای از فراهم‌کننده‌ها دست پیدا کنی که هرکدام طعم خودشان را دارند. انتخاب تو تجربه‌ی توسعه، سرعت و کیفیت، و صورت‌حسابت را شکل می‌دهد. این یک نمای دوستانه است:</p>
+
+        <div class="tbl-wrap">
+          <table class="doc-tbl">
+            <thead><tr>
+              <th><span class="lang-en">Provider</span><span class="lang-fa">فراهم‌کننده</span></th>
+              <th><span class="lang-en">Known for</span><span class="lang-fa">شناخته‌شده برای</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><td><code>OpenAI</code></td><td><span class="lang-en">Strong all-round performance and reasoning; works across text, audio, and vision.</span><span class="lang-fa">عملکرد کلی و استدلال قوی؛ کار با متن، صدا و تصویر.</span></td></tr>
+              <tr><td><code>Anthropic</code></td><td><span class="lang-en">Can switch between quick replies and deeper "thinking"; particularly strong at coding.</span><span class="lang-fa">جابه‌جایی میان پاسخ سریع و «تفکر» عمیق‌تر؛ به‌ویژه قوی در کدنویسی.</span></td></tr>
+              <tr><td><code>Google</code></td><td><span class="lang-en">Low latency, very large context windows, and multimodal input and output.</span><span class="lang-fa">تأخیر کم، پنجره‌های بافت بسیار بزرگ، و ورودی و خروجی چندوجهی.</span></td></tr>
+              <tr><td><code>Mistral</code></td><td><span class="lang-en">Open-weight, efficient, and multilingual — great when you want to run things yourself.</span><span class="lang-fa">وزن‌باز، کارآمد و چندزبانه — عالی وقتی می‌خواهی خودت اجرایش کنی.</span></td></tr>
+              <tr><td><code>Cohere</code></td><td><span class="lang-en">Retrieval-focused and tuned for enterprise use cases.</span><span class="lang-fa">متمرکز بر بازیابی و تنظیم‌شده برای کاربردهای سازمانی.</span></td></tr>
+              <tr><td><code>Meta (Llama)</code></td><td><span class="lang-en">Influential open-source family with strong reasoning and code skills you can download.</span><span class="lang-fa">خانواده‌ی متن‌باز و پرنفوذ با استدلال و مهارت کدنویسی قوی که می‌توانی دانلودش کنی.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="lang-en">Open vs. closed, and a word on licensing</h3>
+        <h3 class="lang-fa">باز در برابر بسته، و یک کلام درباره‌ی مجوز</h3>
+        <p class="lang-en">Two big families sit side by side. <strong>Open-source</strong> models (think Mistral or Llama) can be downloaded, inspected, and reshaped — wonderful for transparency and running locally. <strong>Closed-source</strong> models reach you through an API; you get consistent quality and regular updates, but you depend on an outside service and usually pay per use. A few models sit in the middle with permissive-but-conditional licenses. Whenever you pick a model, glance at its license — how you're allowed to use it can matter as much as how well it performs.</p>
+        <p class="lang-fa">دو خانواده‌ی بزرگ کنار هم قرار دارند. مدل‌های <strong>متن‌باز</strong> (مثل Mistral یا Llama) را می‌توان دانلود، بررسی و بازشکل‌دهی کرد — عالی برای شفافیت و اجرای محلی. مدل‌های <strong>بسته</strong> از طریق یک API به تو می‌رسند؛ کیفیت یکدست و به‌روزرسانی منظم می‌گیری، اما به سرویسی بیرونی وابسته‌ای و معمولاً به‌ازای مصرف می‌پردازی. چند مدل هم با مجوزهای آزادِ اما مشروط در میانه ایستاده‌اند. هر بار مدلی انتخاب کردی، نگاهی به مجوزش بینداز — این‌که چطور مجاز به استفاده‌ای، گاهی به‌اندازه‌ی خوب‌بودن عملکردش اهمیت دارد.</p>
+
+        <div class="note warn">
+          <span class="lang-en">⚠️ <strong>Friendly heads-up:</strong> licensing notes here are for learning, not legal advice. Terms change fast — check each model's own docs before shipping anything commercial.</span>
+          <span class="lang-fa">⚠️ <strong>یادآوری دوستانه:</strong> نکات مربوط به مجوز اینجا برای یادگیری‌اند، نه مشاوره‌ی حقوقی. شرایط سریع تغییر می‌کنند — پیش از انتشار هر چیز تجاری، مستندات خود مدل را ببین.</span>
+        </div>
+      </section>
+
+      <!-- ===== SECTION 3 ===== -->
+      <section id="sec3" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">3</span><span class="lang-en">Where Raw LLMs Fall Short</span><span class="lang-fa">جایی که مدل‌های خام کم می‌آورند</span></h2>
+
+        <p class="lang-en">Language models are dazzling conversationalists, but on their own they're fundamentally <em>reactive</em> — they respond when spoken to, and that's the end of it. To build things that genuinely help, it's worth being honest about the edges of what a bare model can do. None of these are dealbreakers; they're simply the reasons frameworks exist.</p>
+        <p class="lang-fa">مدل‌های زبانی هم‌صحبت‌های خیره‌کننده‌ای هستند، اما به‌تنهایی اساساً <em>واکنشی</em> عمل می‌کنند — وقتی مخاطب‌شان کنی پاسخ می‌دهند و همان‌جا تمام. برای ساختن چیزهایی که واقعاً کمک کنند، خوب است صادقانه درباره‌ی مرزهای کاری که یک مدل خام می‌تواند انجام دهد صحبت کنیم. هیچ‌کدام از این‌ها مانع کار نیستند؛ فقط دلیلِ وجودِ فریم‌ورک‌ها هستند.</p>
+
+        <div class="card-grid">
+          <div class="concept-card">
+            <div class="ico">🦜</div>
+            <h5><span class="lang-en">No real understanding</span><span class="lang-fa">نبود درک واقعی</span></h5>
+            <p><span class="lang-en">A model predicts the next likely word, so it can state wrong facts with full confidence — the famous "hallucination."</span><span class="lang-fa">مدل کلمه‌ی محتمل بعدی را پیش‌بینی می‌کند، پس ممکن است اطلاعات غلط را با اطمینان کامل بگوید — همان «توهم» معروف.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">🧮</div>
+            <h5><span class="lang-en">Wobbly reasoning</span><span class="lang-fa">استدلال لغزان</span></h5>
+            <p><span class="lang-en">Multi-step logic and math can trip it up unless you nudge it to think step by step.</span><span class="lang-fa">منطق چندمرحله‌ای و ریاضی می‌تواند لغزانش کند، مگر آن‌که تشویقش کنی گام‌به‌گام فکر کند.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">📅</div>
+            <h5><span class="lang-en">Frozen knowledge</span><span class="lang-fa">دانش منجمد</span></h5>
+            <p><span class="lang-en">Trained on a fixed snapshot, it doesn't know today's news or live data on its own.</span><span class="lang-fa">روی یک لحظه‌ی ثابت آموزش دیده، پس به‌تنهایی خبر امروز یا داده‌ی زنده را نمی‌داند.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">🔌</div>
+            <h5><span class="lang-en">No hands</span><span class="lang-fa">بدون دست</span></h5>
+            <p><span class="lang-en">By itself it can't call APIs, run code, or touch the outside world.</span><span class="lang-fa">به‌تنهایی نمی‌تواند API صدا بزند، کد اجرا کند یا با دنیای بیرون تماس بگیرد.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">⚖️</div>
+            <h5><span class="lang-en">Bias &amp; reliability</span><span class="lang-fa">سوگیری و اعتمادپذیری</span></h5>
+            <p><span class="lang-en">Learning from vast data means it can absorb and repeat the biases inside it.</span><span class="lang-fa">یادگیری از داده‌ی عظیم یعنی می‌تواند سوگیری‌های درون آن را جذب و تکرار کند.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">💸</div>
+            <h5><span class="lang-en">Cost &amp; speed</span><span class="lang-fa">هزینه و سرعت</span></h5>
+            <p><span class="lang-en">Running big models at scale takes real resources and can add latency.</span><span class="lang-fa">اجرای مدل‌های بزرگ در مقیاس، منابع واقعی می‌خواهد و می‌تواند تأخیر بیفزاید.</span></p>
+          </div>
+        </div>
+
+        <p class="lang-en">See the pattern? Each limitation points toward a fix: give the model tools so it gains hands, give it retrieval so its knowledge stays fresh, give it structure so its reasoning holds together. That's the leap from a passive text generator to an active agent — and it's exactly where we're headed next.</p>
+        <p class="lang-fa">الگو را می‌بینی؟ هر محدودیت به یک راه‌حل اشاره می‌کند: به مدل ابزار بده تا دست پیدا کند، به آن بازیابی بده تا دانشش تازه بماند، به آن ساختار بده تا استدلالش منسجم بماند. این همان جهش از یک تولیدکننده‌ی متنِ منفعل به یک عاملِ فعال است — و دقیقاً مقصد بعدی ماست.</p>
+
+        <div class="note tip">
+          <span class="lang-en">💡 <strong>Tip:</strong> Simple prompt techniques — showing a few examples, or asking the model to "think step by step" — already patch many of these cracks. Frameworks then make those good habits automatic and repeatable.</span>
+          <span class="lang-fa">💡 <strong>نکته:</strong> تکنیک‌های ساده‌ی پرامپت — نشان‌دادن چند نمونه یا خواستن از مدل که «گام‌به‌گام فکر کن» — همین حالا خیلی از این ترک‌ها را وصله می‌کنند. فریم‌ورک‌ها بعد این عادت‌های خوب را خودکار و تکرارپذیر می‌کنند.</span>
+        </div>
+      </section>
+
+      <!-- ===== SECTION 4 ===== -->
+      <section id="sec4" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">4</span><span class="lang-en">From Models to Agents</span><span class="lang-fa">از مدل تا عامل هوشمند</span></h2>
+
+        <p class="lang-en">Here's a lovely way to picture the difference. A raw model is like a brilliant scholar who has read everything but never leaves the library — full of knowledge, short on action. An <strong>agent</strong> gives that scholar a to-do list, a phone, and permission to go get things done. Agency is the ability to perceive a situation, decide what to do, take action, and adjust based on what happens.</p>
+        <p class="lang-fa">یک راه دلنشین برای تصویرکردن این تفاوت هست. یک مدل خام مثل پژوهشگری درخشان است که همه‌چیز را خوانده اما هرگز از کتابخانه بیرون نمی‌رود — سرشار از دانش، کم در عمل. یک <strong>عامل</strong> به آن پژوهشگر یک فهرست کارها، یک تلفن و اجازه‌ی انجام‌دادن می‌دهد. عاملیت یعنی توانایی درک موقعیت، تصمیم درباره‌ی کار، انجام عمل، و تنظیم بر اساس آنچه رخ می‌دهد.</p>
+
+        <h3 class="lang-en">What an agent adds</h3>
+        <h3 class="lang-fa">آنچه یک عامل اضافه می‌کند</h3>
+        <p class="lang-en">Practically, an agent wraps a language model with three superpowers: it can <strong>remember</strong> across turns, it can <strong>use tools</strong> like search engines and databases, and it can <strong>plan and run multi-step tasks</strong> instead of answering one shot and stopping. The payoff is less babysitting — rather than prompting the model for every tiny step, you hand it a goal and let it work.</p>
+        <p class="lang-fa">در عمل، یک عامل، یک مدل زبانی را با سه ابرقدرت می‌پیچد: می‌تواند در طول نوبت‌ها <strong>به‌یاد بیاورد</strong>، می‌تواند از <strong>ابزارها</strong> مثل موتور جست‌وجو و پایگاه‌داده <strong>استفاده کند</strong>، و می‌تواند به‌جای یک پاسخ و توقف، <strong>کارهای چندمرحله‌ای را برنامه‌ریزی و اجرا کند</strong>. سودش کمترشدن مراقبت دائمی است — به‌جای این‌که برای هر گام کوچک پرامپت بدهی، یک هدف به آن می‌سپاری و می‌گذاری کار کند.</p>
+
+        <div class="tbl-wrap">
+          <table class="doc-tbl">
+            <thead><tr>
+              <th><span class="lang-en">A plain LLM call</span><span class="lang-fa">یک فراخوانی ساده‌ی مدل</span></th>
+              <th><span class="lang-en">An agent</span><span class="lang-fa">یک عامل</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><td><span class="lang-en">Waits to be asked, answers once.</span><span class="lang-fa">منتظر می‌ماند تا بپرسی، یک بار پاسخ می‌دهد.</span></td><td><span class="lang-en">Pursues a goal across many steps.</span><span class="lang-fa">یک هدف را در چند گام دنبال می‌کند.</span></td></tr>
+              <tr><td><span class="lang-en">Only knows its training data.</span><span class="lang-fa">فقط داده‌ی آموزشی‌اش را می‌داند.</span></td><td><span class="lang-en">Fetches fresh info via tools.</span><span class="lang-fa">اطلاعات تازه را با ابزار می‌گیرد.</span></td></tr>
+              <tr><td><span class="lang-en">Forgets everything each message.</span><span class="lang-fa">هر پیام همه‌چیز را فراموش می‌کند.</span></td><td><span class="lang-en">Remembers context over time.</span><span class="lang-fa">بافت را در طول زمان به یاد می‌آورد.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="lang-en">Two shapes AI applications tend to take</h3>
+        <h3 class="lang-fa">دو شکلی که اپلیکیشن‌های هوش مصنوعی معمولاً می‌گیرند</h3>
+        <p class="lang-en">Most real-world builds land in one of two buckets. <strong>Human-in-the-loop applications</strong> weave a model into an existing workflow — decision support, content pipelines with a reviewer, tools that make people faster while a human stays in charge. <strong>Autonomous agents</strong> run with a lighter touch: task automators, research-and-analysis systems, or several agents coordinating on a bigger job. Both are worth building, and the right choice depends entirely on how much independence the task can safely handle.</p>
+        <p class="lang-fa">بیشتر ساخته‌های دنیای واقعی در یکی از دو سطل قرار می‌گیرند. <strong>اپلیکیشن‌های انسان‌در‌حلقه</strong> یک مدل را در جریان کاری موجود می‌بافند — پشتیبانی تصمیم، خطوط تولید محتوا با یک بازبین، ابزارهایی که آدم‌ها را سریع‌تر می‌کنند در حالی که انسان مسئول می‌ماند. <strong>عامل‌های خودمختار</strong> با دخالت کمتری کار می‌کنند: خودکارسازهای وظیفه، سیستم‌های پژوهش‌و‌تحلیل، یا چند عامل که روی کاری بزرگ‌تر هماهنگ می‌شوند. هر دو ارزش ساختن دارند و انتخاب درست کاملاً به این بستگی دارد که وظیفه با چه میزان استقلالی می‌تواند به‌سلامت پیش برود.</p>
+
+        <div class="note warn">
+          <span class="lang-en">⚠️ <strong>Keep it grounded:</strong> agents are exciting, but they come with genuine challenges — staying reliable without supervision, earning user trust, avoiding surprise actions, and coordinating cleanly when several agents work together. A great agent isn't the most autonomous one; it's the one that earns the autonomy it's given.</span>
+          <span class="lang-fa">⚠️ <strong>واقع‌بین بمان:</strong> عامل‌ها هیجان‌انگیزند، اما چالش‌های واقعی دارند — قابل‌اعتماد ماندن بدون نظارت، جلب اعتماد کاربر، پرهیز از کنش‌های غافلگیرکننده، و هماهنگی تمیز وقتی چند عامل با هم کار می‌کنند. یک عاملِ عالی، خودمختارترین عامل نیست؛ عاملی است که استقلالِ داده‌شده را می‌ارزد.</span>
+        </div>
+      </section>
+
+      <!-- ===== SECTION 5 ===== -->
+      <section id="sec5" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">5</span><span class="lang-en">Meet LangChain</span><span class="lang-fa">آشنایی با LangChain</span></h2>
+
+        <p class="lang-en">So we have powerful-but-limited models, and a clear wish to turn them into agents. This is the moment <strong>LangChain</strong> steps in. Born in 2022, it's an open-source framework (with a company behind it) that hands you tested building blocks so you don't reinvent the plumbing every time. It speaks several languages — Python and JavaScript most prominently — and its whole philosophy is <em>composability</em>: small, swappable pieces you snap together like LEGO.</p>
+        <p class="lang-fa">پس ما مدل‌های قدرتمند-اما-محدود داریم و آرزویی روشن برای تبدیل‌شان به عامل. این همان لحظه‌ای است که <strong>LangChain</strong> وارد می‌شود. متولد ۲۰۲۲، یک فریم‌ورک متن‌باز است (با یک شرکت پشتیبان) که بلوک‌های آزموده‌شده در اختیارت می‌گذارد تا هر بار لوله‌کشی را از نو اختراع نکنی. چند زبان صحبت می‌کند — به‌ویژه پایتون و جاوااسکریپت — و کل فلسفه‌اش <em>ترکیب‌پذیری</em> است: قطعات کوچک و قابل‌تعویض که مثل لِگو کنار هم می‌چینی.</p>
+
+        <h3 class="lang-en">The three challenges it quietly solves</h3>
+        <h3 class="lang-fa">سه چالشی که بی‌سروصدا حل می‌کند</h3>
+        <div class="tbl-wrap">
+          <table class="doc-tbl">
+            <thead><tr>
+              <th><span class="lang-en">Challenge</span><span class="lang-fa">چالش</span></th>
+              <th><span class="lang-en">How LangChain eases it</span><span class="lang-fa">چطور LangChain آسانش می‌کند</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><td><span class="lang-en"><strong>Reliability</strong> — catching wrong or made-up answers.</span><span class="lang-fa"><strong>اعتمادپذیری</strong> — گرفتنِ پاسخ‌های غلط یا ساختگی.</span></td><td><span class="lang-en">Provides patterns and, with LangSmith, visibility to spot problems early.</span><span class="lang-fa">الگوها را فراهم می‌کند و با LangSmith دیدی می‌دهد تا زود مشکل را ببینی.</span></td></tr>
+              <tr><td><span class="lang-en"><strong>Resource limits</strong> — context windows, rate limits, cost.</span><span class="lang-fa"><strong>محدودیت منابع</strong> — پنجره‌ی بافت، محدودیت نرخ، هزینه.</span></td><td><span class="lang-en">Built-in helpers for chunking, memory, and efficient token use.</span><span class="lang-fa">یاری‌رسان‌های آماده برای تکه‌کردن، حافظه و مصرف کارآمد توکن.</span></td></tr>
+              <tr><td><span class="lang-en"><strong>Integration effort</strong> — wiring up tools and data.</span><span class="lang-fa"><strong>زحمت یکپارچه‌سازی</strong> — اتصال ابزارها و داده.</span></td><td><span class="lang-en">Battle-tested interfaces so you swap vendors without rewriting logic.</span><span class="lang-fa">رابط‌های آزموده تا فروشنده را بدون بازنویسی منطق عوض کنی.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="lang-en">A quick note on tokens, since it explains a lot. Models don't read whole words — they read <strong>tokens</strong>, little chunks of text. The word <code>LangChain</code> might split into <code>Lang</code> and <code>Chain</code>. Every model has a fixed <strong>context window</strong> (the most tokens it can hold at once), and most providers bill by the token. That single fact drives real design decisions: long documents get split into pieces, conversations need memory management, and being tidy with tokens is genuinely a budget question.</p>
+        <p class="lang-fa">یک یادداشت سریع درباره‌ی توکن، چون خیلی چیزها را روشن می‌کند. مدل‌ها کلمات کامل را نمی‌خوانند — <strong>توکن</strong> می‌خوانند، تکه‌های کوچکی از متن. واژه‌ی <code>LangChain</code> ممکن است به <code>Lang</code> و <code>Chain</code> بشکند. هر مدل یک <strong>پنجره‌ی بافت</strong> ثابت دارد (بیشترین توکنی که یک‌جا نگه می‌دارد) و بیشتر فراهم‌کننده‌ها به‌ازای توکن حساب می‌کنند. همین یک واقعیت، تصمیم‌های طراحی واقعی می‌سازد: اسناد بلند به تکه تقسیم می‌شوند، گفت‌وگوها به مدیریت حافظه نیاز دارند، و صرفه‌جویی در توکن واقعاً یک مسئله‌ی بودجه است.</p>
+
+        <h3 class="lang-en">A quick look at the code style</h3>
+        <h3 class="lang-fa">نگاهی سریع به سبک کد</h3>
+        <p class="lang-en">You don't need to run anything yet — Part 2 is where we get hands-on. But here's a taste of how composable LangChain feels. Notice how a prompt, a model, and a parser click together into one small pipeline:</p>
+        <p class="lang-fa">هنوز لازم نیست چیزی اجرا کنی — بخش ۲ جای عملی‌شدن است. اما این یک چشیدنِ حسِ ترکیب‌پذیری LangChain است. ببین چطور یک پرامپت، یک مدل و یک تجزیه‌گر با هم در یک خط لوله‌ی کوچک جفت می‌شوند:</p>
+
+        <div class="code-wrap" data-runnable="local">
+          <div class="code-head">
+            <span class="fname">python <span class="cap-badge cap-local">Preview · run in Part 2</span></span>
+            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+          </div>
+          <pre><code class="language-python">from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# 1) a reusable prompt with a fill-in slot
+prompt = ChatPromptTemplate.from_template(
+    "Explain {idea} to a curious 12-year-old in two sentences."
+)
+
+# 2) any chat model behind one consistent interface
+model = ChatOpenAI(model="gpt-4o-mini")
+
+# 3) turn the model's reply into plain text
+parser = StrOutputParser()
+
+# snap the pieces together with the pipe operator
+chain = prompt | model | parser
+
+print(chain.invoke({"idea": "what a language model is"}))</code></pre>
+        </div>
+
+        <div class="note">
+          <span class="lang-en">📌 That <code>|</code> pipe is the heart of the LangChain Expression Language (LCEL). Each piece does one job, and you can rearrange or replace any of them — swap the model, tweak the prompt — without touching the rest.</span>
+          <span class="lang-fa">📌 آن لوله‌ی <code>|</code> قلب زبان بیان LangChain (به‌اختصار LCEL) است. هر قطعه یک کار می‌کند و می‌توانی هرکدام را جابه‌جا یا جایگزین کنی — مدل را عوض کن، پرامپت را دستکاری کن — بی‌آنکه به بقیه دست بزنی.</span>
+        </div>
+
+        <h3 class="lang-en">The wider family</h3>
+        <h3 class="lang-fa">خانواده‌ی گسترده‌تر</h3>
+        <p class="lang-en">These days LangChain wisely focuses on what it does best and hands specialized jobs to companion projects. <strong>LangChain</strong> handles model integration and workflows. <strong>LangGraph</strong> is the go-to for stateful, multi-step agents — it defines workflows as a graph, keeps state across interactions, streams results in real time, and lets a human step in to approve or correct. <strong>LangSmith</strong> is the observability layer for debugging, testing, and monitoring. Together they cover the full lifecycle: <em>build</em> with LangChain, <em>run</em> with LangGraph, <em>manage</em> with LangSmith.</p>
+        <p class="lang-fa">این روزها LangChain هوشمندانه روی کاری که بهترینش را انجام می‌دهد تمرکز می‌کند و کارهای تخصصی را به پروژه‌های همراه می‌سپارد. <strong>LangChain</strong> یکپارچه‌سازی مدل و جریان‌های کار را برعهده دارد. <strong>LangGraph</strong> گزینه‌ی اصلی برای عامل‌های حالت‌دار و چندمرحله‌ای است — جریان کار را به‌شکل گراف تعریف می‌کند، حالت را در طول تعامل‌ها نگه می‌دارد، نتایج را بلادرنگ پخش می‌کند و اجازه می‌دهد انسان برای تأیید یا اصلاح وارد شود. <strong>LangSmith</strong> لایه‌ی رصدپذیری برای اشکال‌زدایی، آزمون و پایش است. با هم کل چرخه‌ی حیات را پوشش می‌دهند: با LangChain <em>بساز</em>، با LangGraph <em>اجرا کن</em>، با LangSmith <em>مدیریت کن</em>.</p>
+
+        <div class="card-grid">
+          <div class="concept-card">
+            <div class="ico">🏗️</div>
+            <h5><span class="lang-en">Build</span><span class="lang-fa">بساز</span></h5>
+            <p><span class="lang-en">Compose prompts, models, tools, and retrievers into reusable pipelines.</span><span class="lang-fa">پرامپت‌ها، مدل‌ها، ابزارها و بازیاب‌ها را در خط‌لوله‌های قابل‌استفاده‌ی مجدد بچین.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">🚀</div>
+            <h5><span class="lang-en">Run</span><span class="lang-fa">اجرا کن</span></h5>
+            <p><span class="lang-en">Orchestrate reliable agents with graph-based, stateful workflows.</span><span class="lang-fa">عامل‌های قابل‌اعتماد را با جریان‌های حالت‌دار مبتنی بر گراف هماهنگ کن.</span></p>
+          </div>
+          <div class="concept-card">
+            <div class="ico">📊</div>
+            <h5><span class="lang-en">Manage</span><span class="lang-fa">مدیریت کن</span></h5>
+            <p><span class="lang-en">Trace every step, test changes, and monitor quality in production.</span><span class="lang-fa">هر گام را ردیابی کن، تغییرات را بیازما و کیفیت را در محیط عملیاتی پایش کن.</span></p>
+          </div>
+        </div>
+
+        <p class="lang-en">One more thing worth appreciating: LangChain is split into tidy packages — a small <code>langchain-core</code> of shared interfaces, the main <code>langchain</code> library, a <code>langchain-community</code> home for third-party integrations, and dedicated partner packages like <code>langchain-openai</code>. This means you install only what you need and avoid a pile of unnecessary dependencies. It's a quiet design choice that makes everyday work noticeably smoother.</p>
+        <p class="lang-fa">یک نکته‌ی دیگر هم ارزش قدردانی دارد: LangChain به بسته‌های مرتب تقسیم شده — یک <code>langchain-core</code> کوچک از رابط‌های مشترک، کتابخانه‌ی اصلی <code>langchain</code>، خانه‌ای به نام <code>langchain-community</code> برای یکپارچه‌سازی‌های شخص‌ثالث، و بسته‌های اختصاصی شرکای همکار مثل <code>langchain-openai</code>. یعنی فقط چیزی را نصب می‌کنی که لازم داری و از انبوه وابستگی‌های بی‌مورد پرهیز می‌کنی. این یک انتخاب طراحیِ آرام است که کار روزمره را به‌طرز محسوسی روان‌تر می‌کند.</p>
+      </section>
+
+      <!-- ===== SECTION 6 ===== -->
+      <section id="sec6" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">6</span><span class="lang-en">Wrap-up &amp; What's Next</span><span class="lang-fa">جمع‌بندی و ادامه</span></h2>
+
+        <p class="lang-en">Take a breath — you've just built the whole mental scaffolding you need. You now understand how language models grew up, why a bare model can only take you so far, what it means for a model to become an <em>agent</em>, and where LangChain and its companions fit into the picture. That's genuinely the hard conceptual part, and you've got it.</p>
+        <p class="lang-fa">یک نفس بکش — همین حالا کل داربست ذهنی موردنیازت را ساختی. حالا می‌فهمی مدل‌های زبانی چطور بزرگ شدند، چرا یک مدل خام تا جایی بیشتر پیش نمی‌رود، تبدیل‌شدن یک مدل به <em>عامل</em> یعنی چه، و LangChain و همراهانش کجای این تصویر می‌نشینند. این واقعاً بخش مفهومیِ دشوار بود و تو گرفتی‌اش.</p>
+
+        <div class="note tip">
+          <span class="lang-en">🎉 <strong>You made it through Part 1!</strong> Here's the quick recap:</span>
+          <span class="lang-fa">🎉 <strong>بخش ۱ را تمام کردی!</strong> این هم یک جمع‌بندی سریع:</span>
+        </div>
+
+        <ul class="lang-en">
+          <li>Generative AI creates new content; the transformer (2017) and scaling unlocked emergent skills.</li>
+          <li>Models come open or closed, big or small — and clean data can make small models shine.</li>
+          <li>Raw LLMs are reactive: they hallucinate, forget, can't use tools, and know only stale data.</li>
+          <li>Agents add memory, tools, and multi-step planning to turn knowledge into action.</li>
+          <li>LangChain composes the pieces, LangGraph orchestrates reliable agents, LangSmith keeps you observant.</li>
+        </ul>
+        <ul class="lang-fa">
+          <li>هوش مصنوعی مولد محتوای تازه می‌سازد؛ ترنسفورمر (۲۰۱۷) و مقیاس‌پذیری مهارت‌های نوظهور را باز کردند.</li>
+          <li>مدل‌ها باز یا بسته، بزرگ یا کوچک‌اند — و داده‌ی تمیز می‌تواند مدل‌های کوچک را بدرخشاند.</li>
+          <li>مدل‌های خام واکنشی‌اند: توهم می‌زنند، فراموش می‌کنند، ابزار ندارند و فقط داده‌ی کهنه می‌دانند.</li>
+          <li>عامل‌ها حافظه، ابزار و برنامه‌ریزی چندمرحله‌ای می‌افزایند تا دانش را به عمل بدل کنند.</li>
+          <li>LangChain قطعات را می‌چیند، LangGraph عامل‌های قابل‌اعتماد را هماهنگ می‌کند، LangSmith تو را بینا نگه می‌دارد.</li>
+        </ul>
+
+        <div class="next-cta">
+          <div class="txt">
+            <h4><span class="lang-en">Ready for the hands-on part?</span><span class="lang-fa">آماده‌ی بخش عملی هستی؟</span></h4>
+            <p><span class="lang-en">In Part 2 we set up the environment, connect to real models, and build your first chains.</span><span class="lang-fa">در بخش ۲ محیط را آماده می‌کنیم، به مدل‌های واقعی وصل می‌شویم و اولین زنجیره‌هایت را می‌سازیم.</span></p>
+          </div>
+          <a class="next-btn" href="part2.html"><span class="lang-en">Continue to Part 2 →</span><span class="lang-fa">ادامه به بخش ۲ ←</span></a>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-nav">
+          <a href="https://msnnamazi.github.io"><span class="lang-en">🏠 Home</span><span class="lang-fa">🏠 خانه</span></a>
+          <a href="https://msnnamazi.github.io/tutorials/index.html"><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></a>
+          <a href="https://msnnamazi.github.io#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
+        </div>
+        <span class="lang-en">© 2026 Mohsen Namazi · Generative AI &amp; Agents Tutorial (Part 1).</span>
+        <span class="lang-fa">© ۱۴۰۴ محسن نمازی · آموزش هوش مصنوعی مولد و عامل‌ها (بخش ۱).</span>
+      </footer>
+    </article>
+  </div>
+
+  <button id="toTop" title="Back to top">↑</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/slim@3/tsparticles.slim.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+
+  <script>
+    AOS.init({ duration: 800, once: true, offset: 60 });
+
+    const themeBtn = document.getElementById('themeBtn');
+    const root = document.documentElement;
+    function setTheme(mode){
+      root.setAttribute('data-theme', mode);
+      themeBtn.textContent = mode === 'dark' ? '🌙' : '☀️';
+      localStorage.setItem('theme', mode);
+      loadParticles(mode);
+    }
+    themeBtn.addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+
+    function toggleLang(){
+      document.body.classList.toggle('fa');
+      const isFa = document.body.classList.contains('fa');
+      root.lang = isFa ? 'fa' : 'en'; root.dir = isFa ? 'rtl' : 'ltr';
+      localStorage.setItem('lang', isFa ? 'fa' : 'en');
+    }
+
+    function copyCode(btn){
+      const wrap = btn.closest('.code-wrap');
+      const text = wrap.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const o = btn.innerHTML; btn.textContent = '✓'; setTimeout(() => btn.innerHTML = o, 1500);
+      });
+    }
+
+    function loadParticles(mode){
+      const color = mode === 'dark' ? '#6ea8fe' : '#2563eb';
+      tsParticles.load('tsparticles', {
+        fpsLimit:60,
+        particles:{ number:{value:45,density:{enable:true,area:800}}, color:{value:color},
+          links:{enable:true,color:color,distance:140,opacity:.2,width:1},
+          move:{enable:true,speed:.8,outModes:'bounce'}, opacity:{value:.35}, size:{value:{min:1,max:3}} },
+        interactivity:{ events:{onHover:{enable:true,mode:'grab'}}, modes:{grab:{distance:160,links:{opacity:.35}}} },
+        detectRetina:true
+      });
+    }
+
+    const tocLinks = document.querySelectorAll('.toc a[href^="#"]');
+    const spy = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) {
+        const id = e.target.id;
+        tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      }});
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    document.querySelectorAll('.doc-section').forEach(s => spy.observe(s));
+
+    const progress = document.getElementById('progress');
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement;
+      progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+    });
+    const toTop = document.getElementById('toTop');
+    window.addEventListener('scroll', () => toTop.classList.toggle('show', window.scrollY > 500));
+    toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTheme(localStorage.getItem('theme') || 'dark');
+      if (localStorage.getItem('lang') === 'fa') toggleLang();
+      Prism.highlightAll();
+    });
+  </script>
+</body>
+</html>
