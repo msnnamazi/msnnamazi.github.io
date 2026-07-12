@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RDKit Tutorial | Mohsen Namazi</title>
-  <meta name="description" content="A hands-on, bilingual RDKit tutorial — cheminformatics in Python, from your first molecule to reactions, conformers, and diversity picking.">
+  <meta name="description" content="A hands-on, bilingual RDKit tutorial — cheminformatics in Python, from your first molecule to reactions, conformers, and diversity picking. Now with live in-browser code execution.">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,6 +17,10 @@
 
   <!-- Prism (code syntax highlighting) -->
   <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+
+  <!-- CodeMirror (editable code cells) -->
+  <link href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css" rel="stylesheet">
 
   <style>
     /* ============ THEME VARIABLES (same as home page) ============ */
@@ -270,21 +274,93 @@
       display: flex; justify-content: space-between; align-items: center;
       padding: .5rem 1rem; background: rgba(255,255,255,0.03);
       border-bottom: 1px solid var(--card-border);
+      gap: .5rem; flex-wrap: wrap;
     }
     .code-head .fname {
       font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--muted);
+      display: inline-flex; align-items: center; gap: .5rem;
     }
-    .copy-btn {
+    .code-head-btns { display: inline-flex; gap: .4rem; align-items: center; }
+    .copy-btn, .run-btn, .reset-btn {
       background: transparent; border: 1px solid var(--card-border); color: var(--muted);
       border-radius: 8px; padding: .3rem .7rem; font-size: .75rem; cursor: pointer;
-      font-family: 'Inter', sans-serif; transition: color .2s, border-color .2s;
+      font-family: 'Inter', sans-serif; transition: color .2s, border-color .2s, background .2s;
+      display: inline-flex; align-items: center; gap: .35rem;
     }
-    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    body.fa .copy-btn, body.fa .run-btn, body.fa .reset-btn { font-family: 'Vazirmatn', sans-serif; }
+    .copy-btn:hover, .reset-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .run-btn {
+      color: #052e16; font-weight: 700;
+      background: linear-gradient(120deg, #34d399, #10b981); border-color: transparent;
+    }
+    .run-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .run-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
     .code-wrap pre { margin: 0; direction: ltr; text-align: left; }
     .code-wrap pre code {
       font-family: 'JetBrains Mono', monospace !important;
       font-size: .86rem; line-height: 1.6;
     }
+    /* Capability badge on the code header */
+    .cap-badge {
+      font-family: 'Inter', sans-serif; font-size: .64rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      padding: .12rem .5rem; border-radius: 20px; white-space: nowrap;
+    }
+    body.fa .cap-badge { font-family: 'Vazirmatn', sans-serif; }
+    .cap-live  { background: color-mix(in srgb, #34d399 22%, transparent); color: #34d399; }
+    .cap-local { background: color-mix(in srgb, #f5a524 22%, transparent); color: #f5a524; }
+
+    /* CodeMirror editor sizing inside a code-wrap */
+    .code-wrap .CodeMirror {
+      height: auto; background: var(--code-bg);
+      font-family: 'JetBrains Mono', monospace; font-size: .86rem; line-height: 1.6;
+      direction: ltr; text-align: left;
+    }
+    .code-wrap .CodeMirror-scroll { min-height: 40px; }
+
+    /* Output console under a runnable cell */
+    .cell-output {
+      display: none; border-top: 1px dashed var(--card-border);
+      background: rgba(0,0,0,0.28); padding: .8rem 1rem;
+      direction: ltr; text-align: left;
+    }
+    .cell-output.show { display: block; }
+    .cell-output .out-label {
+      font-family: 'Inter', sans-serif; font-size: .66rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+      margin-bottom: .4rem; display: block;
+    }
+    .cell-output pre {
+      margin: 0; white-space: pre-wrap; word-break: break-word;
+      font-family: 'JetBrains Mono', monospace; font-size: .82rem; line-height: 1.55;
+      color: var(--text);
+    }
+    .cell-output pre.err { color: #fca5a5; }
+    .cell-output .svg-holder { margin-top: .7rem; }
+    .cell-output .svg-holder svg { background: #fff; border-radius: 10px; padding: 6px; max-width: 100%; }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+      animation: spin .7s linear infinite; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Global runtime status pill (floating) */
+    #rt-status {
+      position: fixed; bottom: 24px; left: 24px; z-index: 95;
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--card); border: 1px solid var(--card-border);
+      backdrop-filter: blur(10px);
+      border-radius: 30px; padding: .5rem .9rem; font-size: .78rem; color: var(--muted);
+      box-shadow: 0 8px 24px var(--shadow); max-width: 78vw;
+      transition: opacity .3s;
+    }
+    body.fa #rt-status { left: auto; right: 24px; }
+    #rt-status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+    #rt-status.loading .dot { background: #f5a524; animation: pulse 1.2s infinite; }
+    #rt-status.ready   .dot { background: #34d399; }
+    #rt-status.failed  .dot { background: #f87171; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
     /* Progress bar */
     #progress {
@@ -335,13 +411,13 @@
 
   <!-- ============ NAV ============ -->
   <nav>
-    <a class="logo" href="index.html"><span class="home-ico">🏠</span> Mohsen&nbsp;Namazi</a>
+    <a class="logo" href="https://msnnamazi.github.io"><span class="home-ico">🏠</span> Mohsen&nbsp;Namazi</a>
     <div class="nav-links">
-      <a class="home-btn" href="index.html">
+      <a class="home-btn" href="https://msnnamazi.github.io">
         <span class="lang-en">← Home</span><span class="lang-fa">خانه →</span>
       </a>
-      <a href="index.html#tutorials"><span class="lang-en">All Tutorials</span><span class="lang-fa">همه آموزش‌ها</span></a>
-      <a href="index.html#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
+      <a href="https://msnnamazi.github.io/tutorials/index.html"><span class="lang-en">All Tutorials</span><span class="lang-fa">همه آموزش‌ها</span></a>
+      <a href="https://msnnamazi.github.io#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
     </div>
     <div class="controls">
       <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
@@ -354,11 +430,12 @@
   <div class="wrap">
     <!-- ============ TABLE OF CONTENTS ============ -->
     <aside class="toc" data-aos="fade-right">
-      <a class="toc-home" href="index.html">
+      <a class="toc-home" href="https://msnnamazi.github.io">
         <span class="lang-en">← Back to Home</span><span class="lang-fa">→ بازگشت به خانه</span>
       </a>
       <h4><span class="lang-en">Contents</span><span class="lang-fa">فهرست</span></h4>
       <a href="#intro"><span class="lang-en">1. Introduction</span><span class="lang-fa">۱. مقدمه</span></a>
+      <a href="#run"><span class="lang-en">▶ Running Code Here</span><span class="lang-fa">▶ اجرای کد در همین‌جا</span></a>
       <a href="#install"><span class="lang-en">2. Installation</span><span class="lang-fa">۲. نصب</span></a>
       <a href="#mols"><span class="lang-en">3. Reading & Building Molecules</span><span class="lang-fa">۳. خواندن و ساخت مولکول</span></a>
       <a href="#sets"><span class="lang-en">4. Working with Molecule Sets</span><span class="lang-fa">۴. مجموعه‌ای از مولکول‌ها</span></a>
@@ -387,8 +464,8 @@
           <span class="lang-fa">آموزش عملی <span class="gradient-text">RDKit</span></span>
         </h1>
         <p>
-          <span class="lang-en">RDKit is the leading open-source toolkit for cheminformatics. This guide walks you all the way from installing the library to reading files, computing descriptors, searching substructures, measuring similarity, generating 3D structures, running reactions, and filtering drug-like molecules — with runnable Python at every step.</span>
-          <span class="lang-fa">RDKit پرکاربردترین کتابخانه‌ی متن‌باز برای شیمی‌انفورماتیک است. این راهنما شما را از نصب کتابخانه تا خواندن فایل‌ها، محاسبه‌ی توصیفگرها، جستجوی زیرساختارها، اندازه‌گیری شباهت، تولید ساختار سه‌بعدی، اجرای واکنش‌ها و فیلترکردن مولکول‌های شبه‌دارو همراهی می‌کند — با کد پایتونِ قابل‌اجرا در هر گام.</span>
+          <span class="lang-en">RDKit is the leading open-source toolkit for cheminformatics. This guide walks you all the way from installing the library to reading files, computing descriptors, searching substructures, measuring similarity, generating 3D structures, running reactions, and filtering drug-like molecules — with runnable Python at every step. Many of the code cells below run <strong>live in your browser</strong> — just hit ▶ Run.</span>
+          <span class="lang-fa">RDKit پرکاربردترین کتابخانه‌ی متن‌باز برای شیمی‌انفورماتیک است. این راهنما شما را از نصب کتابخانه تا خواندن فایل‌ها، محاسبه‌ی توصیفگرها، جستجوی زیرساختارها، اندازه‌گیری شباهت، تولید ساختار سه‌بعدی، اجرای واکنش‌ها و فیلترکردن مولکول‌های شبه‌دارو همراهی می‌کند — با کد پایتونِ قابل‌اجرا در هر گام. بسیاری از سلول‌های کد زیر <strong>مستقیماً در مرورگر شما</strong> اجرا می‌شوند — کافی است ▶ اجرا را بزنید.</span>
         </p>
         <div class="meta">
           <span class="tag">Python</span>
@@ -396,6 +473,7 @@
           <span class="tag">Cheminformatics</span>
           <span class="tag">Drug Discovery</span>
           <span class="tag">Machine Learning</span>
+          <span class="tag">▶ Live Code</span>
         </div>
       </div>
 
@@ -434,14 +512,46 @@
         </div>
       </section>
 
+      <!-- ▶ RUNNING CODE HERE -->
+      <section id="run" class="doc-section" data-aos="fade-up">
+        <h2><span class="n">▶</span><span class="lang-en">Running the Code Right Here</span><span class="lang-fa">اجرای کد درست در همین صفحه</span></h2>
+        <p class="lang-en">This page ships a real Python runtime (<strong>Pyodide</strong>, CPython compiled to WebAssembly) plus the official <strong>RDKit.js</strong> WebAssembly engine. Code cells with a green <span class="cap-badge cap-live">Live</span> badge are fully editable — change the SMILES, press ▶ Run, and the result (text output and molecule drawings) appears right below the cell. Nothing is sent to a server; it all runs inside your browser tab.</p>
+        <p class="lang-fa">این صفحه یک محیط اجرای واقعی پایتون (<strong>Pyodide</strong>، همان CPython که به WebAssembly کامپایل شده) به‌همراه موتور رسمی WebAssembly به نام <strong>RDKit.js</strong> را بارگذاری می‌کند. سلول‌های کدی که نشان سبز <span class="cap-badge cap-live">Live</span> دارند کاملاً قابل‌ویرایش‌اند — SMILES را عوض کنید، ▶ اجرا را بزنید، و نتیجه (خروجی متنی و رسم مولکول) درست زیر همان سلول ظاهر می‌شود. هیچ‌چیز به سروری فرستاده نمی‌شود؛ همه‌چیز داخل تب مرورگر شما اجرا می‌شود.</p>
+        <div class="note warn">
+          <span class="lang-en">⚠️ <strong>An honest note on scope.</strong> A browser can run the <em>core</em> of RDKit but not every feature. Cells that need heavy machinery not present in the WASM build (3D force-field optimisation, reaction enumeration, the FilterCatalog, MaxMin picker, reading real <code>.sdf</code> files from disk, or pandas) are marked <span class="cap-badge cap-local">Local</span>. Those you run on your own machine after <code>pip install rdkit</code>. Everything else — parsing SMILES, canonicalisation, atoms/bonds/rings, descriptors, substructure search, similarity and drawing — runs live here.</span>
+          <span class="lang-fa">⚠️ <strong>یک نکته‌ی صادقانه درباره‌ی محدوده.</strong> مرورگر می‌تواند <em>هسته‌ی</em> RDKit را اجرا کند اما نه همه‌ی امکانات را. سلول‌هایی که به ابزارهای سنگینِ غایب در نسخه‌ی WASM نیاز دارند (بهینه‌سازی سه‌بعدی با میدان نیرو، شمارش واکنش‌ها، FilterCatalog، انتخاب‌گر MaxMin، خواندن فایل‌های واقعی <code>.sdf</code> از دیسک، یا pandas) با نشان <span class="cap-badge cap-local">Local</span> مشخص شده‌اند. آن‌ها را روی دستگاه خودتان و پس از <code>pip install rdkit</code> اجرا کنید. بقیه‌ی موارد — تجزیه‌ی SMILES، متعارف‌سازی، اتم/پیوند/حلقه، توصیفگرها، جستجوی زیرساختار، شباهت و رسم — همین‌جا زنده اجرا می‌شوند.</span>
+        </div>
+        <p class="lang-en">Try this first cell to confirm everything loaded. The runtime downloads on first Run (a few seconds), then stays warm for the rest of the page.</p>
+        <p class="lang-fa">این سلول اول را امتحان کنید تا مطمئن شوید همه‌چیز بارگذاری شده است. محیط اجرا در نخستین «اجرا» دانلود می‌شود (چند ثانیه)، سپس تا پایان صفحه گرم باقی می‌ماند.</p>
+        <div class="code-wrap" data-runnable="live">
+          <div class="code-head">
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
+          </div>
+          <pre><code class="language-python">from rdkit import Chem
+from rdkit.Chem import Descriptors, Draw
+
+mol = Chem.MolFromSmiles('CC(=O)Oc1ccccc1C(=O)O')  # aspirin
+print('Atoms:', mol.GetNumAtoms())
+print('Canonical SMILES:', Chem.MolToSmiles(mol))
+print('MolWt:', round(Descriptors.MolWt(mol), 2))
+Draw.ShowMol(mol)   # draws the molecule below the cell</code></pre>
+          <div class="cell-output"></div>
+        </div>
+      </section>
+
       <!-- 2. INSTALL -->
       <section id="install" class="doc-section" data-aos="fade-up">
         <h2><span class="n">2</span><span class="lang-en">Installation</span><span class="lang-fa">نصب</span></h2>
         <p class="lang-en">RDKit dropped Python 2 support back in the 2019.03 release, so make sure you're on Python 3. Both <code>pip</code> and <code>conda</code> work today; conda has historically been the most reliable because it pulls in all the compiled dependencies for you.</p>
         <p class="lang-fa">RDKit از نسخه‌ی ۲۰۱۹٫۰۳ پشتیبانی از پایتون ۲ را کنار گذاشته است، پس مطمئن شوید روی پایتون ۳ هستید. امروزه هم <code>pip</code> و هم <code>conda</code> کار می‌کنند؛ conda از نظر تاریخی قابل‌اعتمادترین بوده چون همه‌ی وابستگی‌های کامپایل‌شده را برایتان می‌آورد.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">bash</span>
+            <span class="fname">bash <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-bash"># Using pip (works well on modern systems)
@@ -465,40 +575,52 @@ python -c "from rdkit import Chem; print(Chem.MolFromSmiles('CCO').GetNumAtoms()
         <h2><span class="n">3</span><span class="lang-en">Reading &amp; Building Molecules</span><span class="lang-fa">خواندن و ساخت مولکول</span></h2>
         <p class="lang-en">Everything starts with a <code>Mol</code> object. You can create one from a SMILES string, from a single-molecule Mol file, or from a raw Mol block already sitting in a Python string. Each function returns a molecule on success, or <code>None</code> on failure — RDKit never raises an exception for a bad structure, so you always check the return value yourself.</p>
         <p class="lang-fa">همه‌چیز با یک شیء <code>Mol</code> آغاز می‌شود. می‌توانید آن را از یک رشته‌ی SMILES، از یک فایل Mol تک‌مولکولی، یا از یک بلاک Mol خام که در یک رشته‌ی پایتون قرار دارد بسازید. هر تابع در صورت موفقیت یک مولکول و در صورت شکست <code>None</code> برمی‌گرداند — RDKit هرگز برای یک ساختار خراب استثنا پرتاب نمی‌کند، پس همیشه خودتان مقدار بازگشتی را بررسی می‌کنید.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 
-# Three ways to build one molecule
-m = Chem.MolFromSmiles('Cc1ccccc1')                 # from SMILES (toluene)
-m = Chem.MolFromMolFile('data/input.mol')           # from a .mol file
-block = open('data/input.mol').read()
-m = Chem.MolFromMolBlock(block)                     # from a Mol block string
+# Build one molecule from a SMILES string (toluene)
+m = Chem.MolFromSmiles('Cc1ccccc1')
+print('Toluene atoms:', m.GetNumAtoms())
 
 # Success gives a Mol; failure gives None (never an exception)
-bad = Chem.MolFromMolFile('data/invalid.mol')
-print(bad is None)                                  # True</code></pre>
+bad = Chem.MolFromSmiles('this-is-not-a-molecule')
+print('Bad parse is None:', bad is None)</code></pre>
+          <div class="cell-output"></div>
+        </div>
+        <div class="note">
+          <span class="lang-en">On your own machine you can also read structures straight from files — <code>Chem.MolFromMolFile('input.mol')</code> and <code>Chem.MolFromMolBlock(text)</code>. Those touch the local filesystem, so run them locally rather than in the in-page runtime.</span>
+          <span class="lang-fa">روی دستگاه خودتان می‌توانید ساختارها را مستقیم از فایل هم بخوانید — <code>Chem.MolFromMolFile('input.mol')</code> و <code>Chem.MolFromMolBlock(text)</code>. این‌ها با سیستم‌فایل محلی سروکار دارند، پس آن‌ها را به‌جای محیط درون‌صفحه، به‌صورت محلی اجرا کنید.</span>
         </div>
 
         <h3 class="lang-en">Sensible error messages</h3>
         <h3 class="lang-fa">پیام‌های خطای معنادار</h3>
         <p class="lang-en">When a SMILES can't possibly describe a real molecule, RDKit prints a helpful diagnostic and returns <code>None</code>. For example, an oxygen with too many bonds, or an aromatic ring that can't be "kekulized" (assigned alternating single/double bonds):</p>
         <p class="lang-fa">وقتی یک SMILES نمی‌تواند مولکول واقعی را توصیف کند، RDKit یک پیام تشخیصی مفید چاپ کرده و <code>None</code> برمی‌گرداند. برای مثال، اکسیژنی با پیوندهای بیش‌ازحد، یا حلقه‌ی آروماتیکی که نمی‌توان آن را «کِکوله» کرد (تخصیص پیوندهای یگانه/دوگانه‌ی متناوب):</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
-          <pre><code class="language-python">m1 = Chem.MolFromSmiles('CO(C)C')   # O with too many bonds
-# [12:18:01] Explicit valence for atom # 1 O greater than permitted
-print(m1 is None)                   # True
+          <pre><code class="language-python">from rdkit import Chem
+
+m1 = Chem.MolFromSmiles('CO(C)C')   # O with too many bonds
+print('m1 is None:', m1 is None)    # True
 
 m2 = Chem.MolFromSmiles('c1cc1')    # can't kekulize a 3-membered aromatic ring
-# [12:20:41] Can't kekulize mol
-print(m2 is None)                   # True</code></pre>
+print('m2 is None:', m2 is None)    # True</code></pre>
+          <div class="cell-output"></div>
         </div>
         <div class="note warn">
           <span class="lang-en">⚠️ Because errors come back as <code>None</code>, forgetting the null check is the single most common RDKit bug. Get in the habit of writing <code>if mol is None: continue</code> whenever you loop over parsed structures.</span>
@@ -511,9 +633,9 @@ print(m2 is None)                   # True</code></pre>
         <h2><span class="n">4</span><span class="lang-en">Working with Molecule Sets</span><span class="lang-fa">کار با مجموعه‌ای از مولکول‌ها</span></h2>
         <p class="lang-en">Real projects rarely deal with a single molecule — you read whole libraries of them. RDKit calls its file readers <strong>Suppliers</strong>. An <code>SDMolSupplier</code> reads an SDF file, and you can loop over it, turn it into a list, or index into it like an array.</p>
         <p class="lang-fa">پروژه‌های واقعی به‌ندرت با یک مولکول سروکار دارند — شما کتابخانه‌های کاملی از آن‌ها را می‌خوانید. RDKit خواننده‌های فایلش را <strong>Supplier</strong> می‌نامد. یک <code>SDMolSupplier</code> فایل SDF را می‌خواند و می‌توانید روی آن پیمایش کنید، به لیست تبدیلش کنید یا مثل یک آرایه به آن اندیس بزنید.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -531,14 +653,18 @@ print(len(suppl))              # how many records
 print(suppl[0].GetNumAtoms())  # jump straight to the first one
 mols = [m for m in suppl if m is not None]  # materialize to a list</code></pre>
         </div>
+        <div class="note">
+          <span class="lang-en">💡 Suppliers read files from disk, so they run <strong>locally</strong>, not in the browser. To simulate a "set" in the live runtime, just build a Python list from SMILES: <code>mols = [Chem.MolFromSmiles(s) for s in smiles_list]</code> — every later live cell uses exactly that trick.</span>
+          <span class="lang-fa">💡 Supplierها فایل‌ها را از دیسک می‌خوانند، پس <strong>محلی</strong> اجرا می‌شوند، نه در مرورگر. برای شبیه‌سازی یک «مجموعه» در محیط زنده، کافی است از SMILES یک لیست پایتون بسازید: <code>mols = [Chem.MolFromSmiles(s) for s in smiles_list]</code> — همه‌ی سلول‌های زنده‌ی بعدی دقیقاً از همین ترفند استفاده می‌کنند.</span>
+        </div>
 
         <h3 class="lang-en">Streaming and compressed files</h3>
         <h3 class="lang-fa">فایل‌های جریانی و فشرده</h3>
         <p class="lang-en">If your file is huge or gzip-compressed, use a <code>ForwardSDMolSupplier</code>. It reads from any file-like object one record at a time, which means it can stream straight out of a <code>.sdf.gz</code> without unpacking the whole thing. The trade-off: it's forward-only, so no indexing. For very large files, the multithreaded suppliers can parse records in parallel.</p>
         <p class="lang-fa">اگر فایلتان بزرگ یا با gzip فشرده باشد، از <code>ForwardSDMolSupplier</code> استفاده کنید. این از هر شیء فایل‌مانند، هر بار یک رکورد را می‌خواند، یعنی می‌تواند مستقیماً از یک <code>.sdf.gz</code> بدون باز کردن کل آن جریان بگیرد. بده‌بستان: فقط رو‌به‌جلو است، پس اندیس‌گذاری ندارد. برای فایل‌های بسیار بزرگ، Supplierهای چندنخی می‌توانند رکوردها را به‌موازات تجزیه کنند.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">import gzip
@@ -582,30 +708,34 @@ with Chem.MultithreadedSDMolSupplier('data/5ht3ligs.sdf') as ms:
         <h2><span class="n">5</span><span class="lang-en">Writing &amp; Saving Molecules</span><span class="lang-fa">نوشتن و ذخیره‌ی مولکول‌ها</span></h2>
         <p class="lang-en">Going the other way — molecule to text — is just as easy. The workhorse is <code>MolToSmiles</code>, which produces a <strong>canonical</strong> SMILES: no matter how you originally wrote the molecule, the same structure always yields the same string. That's what makes SMILES usable as a dictionary key or a duplicate-detector.</p>
         <p class="lang-fa">راه معکوس — مولکول به متن — به همان اندازه ساده است. اسب‌بارکشِ اصلی <code>MolToSmiles</code> است که یک SMILES <strong>متعارف (canonical)</strong> تولید می‌کند: مهم نیست مولکول را در ابتدا چطور نوشته‌اید، یک ساختار یکسان همیشه رشته‌ی یکسانی می‌دهد. همین است که SMILES را به‌عنوان کلید دیکشنری یا آشکارساز تکراری قابل‌استفاده می‌کند.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 
 # Canonical SMILES: three different inputs, one output
 for s in ('C1=CC=CN=C1', 'c1cccnc1', 'n1ccccc1'):
-    print(Chem.MolToSmiles(Chem.MolFromSmiles(s)))   # all -> 'c1ccncc1'
-
-# Drop stereochemistry if you don't need it
-m = Chem.MolFromMolFile('data/chiral.mol')
-print(Chem.MolToSmiles(m))                       # 'C[C@H](O)c1ccccc1'
-print(Chem.MolToSmiles(m, isomericSmiles=False)) # 'CC(O)c1ccccc1'</code></pre>
+    print(s, '->', Chem.MolToSmiles(Chem.MolFromSmiles(s)))   # all the same!</code></pre>
+          <div class="cell-output"></div>
+        </div>
+        <div class="note">
+          <span class="lang-en">On your machine you can also drop stereochemistry with <code>Chem.MolToSmiles(m, isomericSmiles=False)</code> when reading chiral Mol files.</span>
+          <span class="lang-fa">روی دستگاه خودتان هنگام خواندن فایل‌های Molِ کایرال می‌توانید با <code>Chem.MolToSmiles(m, isomericSmiles=False)</code> استریوشیمی را حذف کنید.</span>
         </div>
 
         <h3 class="lang-en">Writing many molecules to an SDF</h3>
         <h3 class="lang-fa">نوشتن چند مولکول در یک SDF</h3>
         <p class="lang-en">To save a whole set, use an <code>SDWriter</code>. You can name each molecule by setting its special <code>_Name</code> property, and RDKit will auto-generate 2D coordinates on the fly so the Mol block is drawable.</p>
         <p class="lang-fa">برای ذخیره‌ی یک مجموعه‌ی کامل از <code>SDWriter</code> استفاده کنید. می‌توانید هر مولکول را با تنظیم ویژگی خاص <code>_Name</code> نام‌گذاری کنید، و RDKit به‌صورت خودکار مختصات دوبعدی تولید می‌کند تا بلاک Mol قابل‌رسم باشد.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -634,52 +764,58 @@ with Chem.SDWriter('out.sdf') as w:   # context manager closes the file for you
         <h2><span class="n">6</span><span class="lang-en">Atoms, Bonds &amp; Rings</span><span class="lang-fa">اتم‌ها، پیوندها و حلقه‌ها</span></h2>
         <p class="lang-en">A molecule is a graph, and RDKit lets you walk it freely. You can loop over every atom and bond, grab one by index, ask an atom for its neighbors, or query the ring system. This graph-level access is where a lot of custom cheminformatics logic lives.</p>
         <p class="lang-fa">یک مولکول یک گراف است، و RDKit اجازه می‌دهد آزادانه روی آن حرکت کنید. می‌توانید روی هر اتم و پیوند پیمایش کنید، یکی را با اندیس بگیرید، از یک اتم همسایه‌هایش را بپرسید، یا سیستم حلقه را پرس‌وجو کنید. این دسترسی در سطح گراف جایی است که بخش زیادی از منطق سفارشی شیمی‌انفورماتیک زندگی می‌کند.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 
 m = Chem.MolFromSmiles('C1OC1')   # ethylene oxide
 
-# Walk atoms and bonds
+# Walk atoms
 for atom in m.GetAtoms():
     print(atom.GetIdx(), atom.GetSymbol(), atom.GetAtomicNum())
-print(m.GetBonds()[0].GetBondType())          # SINGLE
 
 # Access individual pieces
-print(m.GetAtomWithIdx(0).GetSymbol())        # 'C'
-print(m.GetBondBetweenAtoms(0, 1).GetBondType())
+print('Atom 0 symbol:', m.GetAtomWithIdx(0).GetSymbol())        # 'C'
 
 # Atoms know their neighbors
 a = m.GetAtomWithIdx(0)
-print([nbr.GetSymbol() for nbr in a.GetNeighbors()])  # ['O', 'C']</code></pre>
+print('Neighbors of atom 0:', [nbr.GetSymbol() for nbr in a.GetNeighbors()])</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">Ring information</h3>
         <h3 class="lang-fa">اطلاعات حلقه</h3>
         <p class="lang-en">Atoms and bonds carry ring membership info. For repeated queries, ask the molecule for its <code>RingInfo</code> object rather than calling <code>GetAtomWithIdx</code> in a loop — it's much faster.</p>
         <p class="lang-fa">اتم‌ها و پیوندها اطلاعات عضویت در حلقه را حمل می‌کنند. برای پرس‌وجوهای مکرر، به‌جای فراخوانی <code>GetAtomWithIdx</code> در حلقه، از مولکول شیء <code>RingInfo</code> آن را بخواهید — بسیار سریع‌تر است.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
-          <pre><code class="language-python">m = Chem.MolFromSmiles('OC1C2C1CC2')
+          <pre><code class="language-python">from rdkit import Chem
+m = Chem.MolFromSmiles('OC1C2C1CC2')
 
-print(m.GetAtomWithIdx(0).IsInRing())        # False (the hydroxyl O)
-print(m.GetAtomWithIdx(2).IsInRingSize(3))   # True
-print(m.GetAtomWithIdx(2).IsInRingSize(4))   # True
+print('Atom 0 in a ring? ', m.GetAtomWithIdx(0).IsInRing())    # False (the OH)
+print('Atom 2 in a 3-ring?', m.GetAtomWithIdx(2).IsInRingSize(3))
 
-# Efficient bulk ring queries
 ri = m.GetRingInfo()
-print(ri.NumAtomRings(2))                    # 2  (atom 2 is in two rings)
-print(ri.IsAtomInRingOfSize(1, 3))           # True
+print('Rings containing atom 2:', ri.NumAtomRings(2))
 
 # The smallest set of smallest rings (SSSR)
 ssr = Chem.GetSymmSSSR(m)
-print(len(ssr), [list(r) for r in ssr])</code></pre>
+print('Ring count:', len(ssr), '  members:', [list(r) for r in ssr])</code></pre>
+          <div class="cell-output"></div>
         </div>
       </section>
 
@@ -688,30 +824,35 @@ print(len(ssr), [list(r) for r in ssr])</code></pre>
         <h2><span class="n">7</span><span class="lang-en">Modifying Molecules</span><span class="lang-fa">اصلاح مولکول‌ها</span></h2>
         <p class="lang-en">By default RDKit keeps hydrogens <em>implicit</em> — they're counted but not drawn as separate nodes in the graph, which keeps things tidy. When you need explicit Hs (essential for realistic 3D geometry), add them with <code>AddHs</code> and strip them later with <code>RemoveHs</code>.</p>
         <p class="lang-fa">به‌طور پیش‌فرض RDKit هیدروژن‌ها را <em>ضمنی</em> نگه می‌دارد — شمرده می‌شوند اما به‌عنوان گره‌های جداگانه در گراف رسم نمی‌شوند، که کارها را مرتب نگه می‌دارد. وقتی به هیدروژن‌های صریح نیاز دارید (برای هندسه‌ی واقع‌گرایانه‌ی سه‌بعدی ضروری است)، آن‌ها را با <code>AddHs</code> اضافه کرده و بعداً با <code>RemoveHs</code> حذف کنید.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 
 m = Chem.MolFromSmiles('CCO')
-print(m.GetNumAtoms())          # 3 (Hs are implicit)
+print('Implicit Hs:', m.GetNumAtoms())    # 3
 
 m2 = Chem.AddHs(m)
-print(m2.GetNumAtoms())         # 9 (Hs now explicit)
+print('Explicit Hs:', m2.GetNumAtoms())   # 9
 
 m3 = Chem.RemoveHs(m2)
-print(m3.GetNumAtoms())         # 3 again</code></pre>
+print('Removed again:', m3.GetNumAtoms()) # 3</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">Aromaticity, Kekulization &amp; Sanitization</h3>
         <h3 class="lang-fa">آروماتیسیته، کِکوله‌سازی و پاک‌سازی</h3>
         <p class="lang-en">RDKit stores aromatic rings with a special "aromatic" bond type. <code>Kekulize</code> converts them into alternating single/double bonds; <code>SanitizeMol</code> restores the aromatic perception and, more importantly, validates that the whole molecule is chemically consistent. Sanitization is your safety net after any structural edit.</p>
         <p class="lang-fa">RDKit حلقه‌های آروماتیک را با یک نوع پیوند «آروماتیک» ویژه ذخیره می‌کند. <code>Kekulize</code> آن‌ها را به پیوندهای متناوب یگانه/دوگانه تبدیل می‌کند؛ <code>SanitizeMol</code> درک آروماتیک را بازیابی و مهم‌تر از آن، سازگاری شیمیایی کل مولکول را اعتبارسنجی می‌کند. پاک‌سازی تور ایمنی شما پس از هر ویرایش ساختاری است.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -737,30 +878,35 @@ print(m.GetBondWithIdx(0).GetBondType())      # AROMATIC again</code></pre>
         <h2><span class="n">8</span><span class="lang-en">Molecular Descriptors</span><span class="lang-fa">توصیفگرهای مولکولی</span></h2>
         <p class="lang-en">Descriptors turn a molecule into numbers — molecular weight, LogP (lipophilicity), hydrogen-bond donors/acceptors, topological polar surface area (TPSA), and 200+ more. They're the raw features for QSAR and machine-learning models.</p>
         <p class="lang-fa">توصیفگرها یک مولکول را به عدد تبدیل می‌کنند — وزن مولکولی، LogP (چربی‌دوستی)، دهنده/گیرنده‌های پیوند هیدروژنی، مساحت سطح قطبی توپولوژیک (TPSA) و بیش از ۲۰۰ مورد دیگر. این‌ها ویژگی‌های خام برای مدل‌های QSAR و یادگیری ماشین هستند.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 from rdkit.Chem import Descriptors
 
 mol = Chem.MolFromSmiles('CC(=O)OC1=CC=CC=C1C(=O)O')  # aspirin
 
-print('MolWt:', Descriptors.MolWt(mol))
-print('LogP:', Descriptors.MolLogP(mol))
+print('MolWt:', round(Descriptors.MolWt(mol), 2))
+print('LogP:', round(Descriptors.MolLogP(mol), 2))
 print('H-bond donors:', Descriptors.NumHDonors(mol))
 print('H-bond acceptors:', Descriptors.NumHAcceptors(mol))
-print('TPSA:', Descriptors.TPSA(mol))</code></pre>
+print('TPSA:', round(Descriptors.TPSA(mol), 2))</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">All descriptors at once → pandas</h3>
         <h3 class="lang-fa">همه‌ی توصیفگرها یک‌جا ← pandas</h3>
         <p class="lang-en">Instead of calling descriptors one by one, <code>CalcMolDescriptors</code> returns every available descriptor as a dictionary — perfect for building a feature matrix. Feed a list of these dicts straight into a pandas DataFrame and you have a ready-to-model table.</p>
         <p class="lang-fa">به‌جای فراخوانی تک‌تک توصیفگرها، <code>CalcMolDescriptors</code> هر توصیفگر موجود را به‌صورت یک دیکشنری برمی‌گرداند — عالی برای ساخت ماتریس ویژگی. یک لیست از این دیکشنری‌ها را مستقیم به یک DataFrame پانداس بدهید و یک جدولِ آماده‌ی مدل‌سازی دارید.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">import pandas as pd
@@ -781,12 +927,13 @@ print(df[['MolWt', 'MolLogP', 'TPSA']])</code></pre>
         <h3 class="lang-fa">بارهای جزئی</h3>
         <p class="lang-en">Per-atom Gasteiger partial charges are computed in place and stored as an atom property you read back afterward.</p>
         <p class="lang-fa">بارهای جزئی گاستایگر برای هر اتم در جای خود محاسبه و به‌عنوان یک ویژگی اتمی ذخیره می‌شوند که بعداً بازخوانی می‌کنید.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
-          <pre><code class="language-python">from rdkit.Chem import AllChem
+          <pre><code class="language-python">from rdkit import Chem
+from rdkit.Chem import AllChem
 
 m = Chem.MolFromSmiles('c1ccccc1C(=O)O')
 AllChem.ComputeGasteigerCharges(m)
@@ -800,46 +947,46 @@ print(round(q, 3))       # e.g. -0.047</code></pre>
         <h2><span class="n">9</span><span class="lang-en">Substructure Search</span><span class="lang-fa">جستجوی زیرساختار</span></h2>
         <p class="lang-en">Substructure search answers "does this molecule contain that pattern?" — the backbone of library filtering. Patterns are usually written in <strong>SMARTS</strong>, a richer cousin of SMILES designed for querying. <code>HasSubstructMatch</code> gives a yes/no; <code>GetSubstructMatches</code> gives the actual matching atom indices.</p>
         <p class="lang-fa">جستجوی زیرساختار به این پرسش پاسخ می‌دهد که «آیا این مولکول شامل آن الگو هست؟» — ستون فقرات فیلترکردن کتابخانه. الگوها معمولاً با <strong>SMARTS</strong> نوشته می‌شوند، پسرعموی غنی‌ترِ SMILES که برای پرس‌وجو طراحی شده است. <code>HasSubstructMatch</code> پاسخ بله/خیر می‌دهد؛ <code>GetSubstructMatches</code> اندیس‌های اتمیِ منطبق را می‌دهد.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 
 m = Chem.MolFromSmiles('c1ccccc1O')     # phenol
 patt = Chem.MolFromSmarts('ccO')        # aromatic-C, aromatic-C, O
 
-print(m.HasSubstructMatch(patt))        # True
-print(m.GetSubstructMatch(patt))        # (0, 5, 6) — one match
-print(m.GetSubstructMatches(patt))      # ((0, 5, 6), (4, 5, 6)) — all matches
-
-# Filter a whole library in one comprehension
-patt = Chem.MolFromSmarts('c[NH1]')
-with Chem.SDMolSupplier('data/actives_5ht3.sdf') as suppl:
-    hits = [m for m in suppl if m is not None and m.HasSubstructMatch(patt)]
-print(len(hits))</code></pre>
+print('Has match?', m.HasSubstructMatch(patt))
+print('First match:', m.GetSubstructMatch(patt))
+print('All matches:', m.GetSubstructMatches(patt))</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">SMARTS vs SMILES semantics</h3>
         <h3 class="lang-fa">معنای SMARTS در برابر SMILES</h3>
         <p class="lang-en">You can query with either a SMARTS or a SMILES pattern, but they don't mean the same thing. SMILES is literal about aromaticity; SMARTS lets you be precise. Notice how a lowercase <code>c</code> (aromatic carbon) matters:</p>
         <p class="lang-fa">می‌توانید با الگوی SMARTS یا SMILES پرس‌وجو کنید، اما معنای یکسانی ندارند. SMILES درباره‌ی آروماتیسیته تحت‌اللفظی است؛ SMARTS اجازه‌ی دقت می‌دهد. توجه کنید که چطور یک <code>c</code>ی کوچک (کربن آروماتیک) اهمیت دارد:</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
-          <pre><code class="language-python">m = Chem.MolFromSmiles('C1=CC=CC=C1OC')   # anisole (aromatic ring + OMe)
+          <pre><code class="language-python">from rdkit import Chem
+m = Chem.MolFromSmiles('C1=CC=CC=C1OC')   # anisole (aromatic ring + OMe)
 
 print(m.HasSubstructMatch(Chem.MolFromSmiles('COC')))   # True
 print(m.HasSubstructMatch(Chem.MolFromSmarts('COC')))   # False (needs aromatic c)
-print(m.HasSubstructMatch(Chem.MolFromSmarts('COc')))   # True
-
-# Stereochemistry is ignored by default — opt in with useChirality
-m = Chem.MolFromSmiles('CC[C@H](F)Cl')
-print(m.HasSubstructMatch(Chem.MolFromSmiles('C[C@@H](F)Cl')))                    # True
-print(m.HasSubstructMatch(Chem.MolFromSmiles('C[C@@H](F)Cl'), useChirality=True)) # False</code></pre>
+print(m.HasSubstructMatch(Chem.MolFromSmarts('COc')))   # True</code></pre>
+          <div class="cell-output"></div>
         </div>
       </section>
 
@@ -848,9 +995,9 @@ print(m.HasSubstructMatch(Chem.MolFromSmiles('C[C@@H](F)Cl'), useChirality=True)
         <h2><span class="n">10</span><span class="lang-en">Chemical Transformations</span><span class="lang-fa">تبدیل‌های شیمیایی</span></h2>
         <p class="lang-en">Once you can match a substructure, you can edit around it. RDKit ships quick helpers to delete a group, replace it, or split a molecule into a scaffold and its side chains — the everyday moves of SAR analysis.</p>
         <p class="lang-fa">وقتی توانستید یک زیرساختار را منطبق کنید، می‌توانید پیرامون آن ویرایش کنید. RDKit کمک‌کننده‌های سریعی برای حذف یک گروه، جایگزینی آن، یا تقسیم یک مولکول به داربست و شاخه‌های جانبی‌اش دارد — حرکت‌های روزمره‌ی تحلیل SAR.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -877,9 +1024,9 @@ print(Chem.MolToSmiles(Chem.ReplaceCore(m1, core)))  # '[1*]CCBr.[2*]C(=O)O'</co
         <h3 class="lang-fa">داربست‌های مورکو</h3>
         <p class="lang-en">A Murcko scaffold is the ring system of a molecule with its side chains removed — the "core shape." It's the standard way to group compounds by their skeleton. You can even reduce it further to a generic framework where every atom becomes carbon and every bond single.</p>
         <p class="lang-fa">داربست مورکو، سیستم حلقه‌ی یک مولکول با حذف شاخه‌های جانبی است — «شکلِ هسته». این روش استاندارد گروه‌بندی ترکیبات بر اساس اسکلتشان است. حتی می‌توانید آن را به یک چارچوب عام تقلیل دهید که در آن هر اتم کربن و هر پیوند یگانه می‌شود.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -898,33 +1045,41 @@ print(Chem.MolToSmiles(generic))                  # all-carbon skeleton</code></
         <h2><span class="n">11</span><span class="lang-en">Fingerprints &amp; Similarity</span><span class="lang-fa">اثرانگشت و شباهت</span></h2>
         <p class="lang-en">A fingerprint encodes a molecule's features into a bit vector (or count vector), so two molecules can be compared numerically. The modern, recommended way is to create a <strong>fingerprint generator</strong> once and reuse it. The <strong>Tanimoto</strong> coefficient (0 = totally different, 1 = identical fingerprints) is the standard similarity metric.</p>
         <p class="lang-fa">یک اثرانگشت، ویژگی‌های یک مولکول را در یک بردار بیتی (یا بردار شمارشی) رمزگذاری می‌کند تا دو مولکول به‌صورت عددی مقایسه شوند. راه مدرن و توصیه‌شده این است که یک‌بار یک <strong>مولد اثرانگشت</strong> بسازید و دوباره استفاده کنید. ضریب <strong>تنیموتو</strong> (۰ = کاملاً متفاوت، ۱ = اثرانگشت‌های یکسان) معیار استاندارد شباهت است.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 
 ms = [Chem.MolFromSmiles(s) for s in ('CCOC', 'CCO', 'COC')]
 
-# Modern approach: build a generator, reuse it
-fpgen = AllChem.GetRDKitFPGenerator()
+# Morgan fingerprints (ECFP4-like) + Tanimoto similarity
+fpgen = AllChem.GetMorganGenerator(radius=2)
 fps = [fpgen.GetFingerprint(m) for m in ms]
 
-print(DataStructs.TanimotoSimilarity(fps[0], fps[1]))  # ~0.6
-print(DataStructs.DiceSimilarity(fps[0], fps[1]))      # ~0.75
-# Other metrics: Cosine, Sokal, Russel, Kulczynski, Tversky ...</code></pre>
+print('CCOC vs CCO:', round(DataStructs.TanimotoSimilarity(fps[0], fps[1]), 3))
+print('CCOC vs COC:', round(DataStructs.TanimotoSimilarity(fps[0], fps[2]), 3))</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">Morgan (circular) fingerprints — the ECFP workhorse</h3>
         <h3 class="lang-fa">اثرانگشت مورگان (دایره‌ای) — اسب‌بارکشِ ECFP</h3>
-        <p class="lang-en">Morgan fingerprints (a.k.a. ECFP/FCFP) are the most popular choice for similarity and ML. They describe each atom's circular neighborhood out to a given <code>radius</code>. Remember: RDKit's <code>radius=2</code> corresponds to <strong>ECFP4</strong> (the 4 is the diameter). You can get them as bit vectors or as counts.</p>
-        <p class="lang-fa">اثرانگشت‌های مورگان (معروف به ECFP/FCFP) محبوب‌ترین انتخاب برای شباهت و یادگیری ماشین‌اند. آن‌ها همسایگی دایره‌ای هر اتم را تا یک <code>radius</code> معین توصیف می‌کنند. به‌یاد داشته باشید: <code>radius=2</code>ی RDKit معادل <strong>ECFP4</strong> است (عدد ۴ قطر است). می‌توانید آن‌ها را به‌صورت بردار بیتی یا شمارشی بگیرید.</p>
-        <div class="code-wrap">
+        <p class="lang-en">Morgan fingerprints (a.k.a. ECFP/FCFP) are the most popular choice for similarity and ML. They describe each atom's circular neighborhood out to a given <code>radius</code>. Remember: RDKit's <code>radius=2</code> corresponds to <strong>ECFP4</strong> (the 4 is the diameter).</p>
+        <p class="lang-fa">اثرانگشت‌های مورگان (معروف به ECFP/FCFP) محبوب‌ترین انتخاب برای شباهت و یادگیری ماشین‌اند. آن‌ها همسایگی دایره‌ای هر اتم را تا یک <code>radius</code> معین توصیف می‌کنند. به‌یاد داشته باشید: <code>radius=2</code>ی RDKit معادل <strong>ECFP4</strong> است (عدد ۴ قطر است).</p>
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
@@ -933,28 +1088,23 @@ m1 = Chem.MolFromSmiles('Cc1ccccc1')   # toluene
 m2 = Chem.MolFromSmiles('Cc1ncccc1')   # methylpyridine
 
 fpgen = AllChem.GetMorganGenerator(radius=2)   # ~ ECFP4
-fp1 = fpgen.GetFingerprint(m1)                 # bit vector (2048 bits)
+fp1 = fpgen.GetFingerprint(m1)
 fp2 = fpgen.GetFingerprint(m2)
-print(DataStructs.TanimotoSimilarity(fp1, fp2))
-
-# Counts instead of bits
-c1 = fpgen.GetSparseCountFingerprint(m1)
-
-# Feature-based (FCFP-style) invariants pharmacophore-like similarity
-inv = AllChem.GetMorganFeatureAtomInvGen()
-ffpgen = AllChem.GetMorganGenerator(radius=2, atomInvariantsGenerator=inv)</code></pre>
+print('Tanimoto:', round(DataStructs.TanimotoSimilarity(fp1, fp2), 3))</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">MACCS keys &amp; explaining bits</h3>
         <h3 class="lang-fa">کلیدهای MACCS و توضیح بیت‌ها</h3>
-        <p class="lang-en">The 166 public MACCS keys are a fixed set of interpretable structural questions ("does it have a carboxylic acid?"). And with the generators' <code>additionalOutput</code>, you can even trace which atoms set a given bit — invaluable for explaining a model.</p>
-        <p class="lang-fa">۱۶۶ کلید عمومی MACCS مجموعه‌ای ثابت از پرسش‌های ساختاری قابل‌تفسیرند («آیا کربوکسیلیک‌اسید دارد؟»). و با <code>additionalOutput</code>ی مولدها، حتی می‌توانید ردیابی کنید کدام اتم‌ها یک بیت مشخص را روشن کرده‌اند — بی‌نظیر برای توضیح یک مدل.</p>
-        <div class="code-wrap">
+        <p class="lang-en">The 166 public MACCS keys are a fixed set of interpretable structural questions ("does it have a carboxylic acid?"). And with the generators' <code>additionalOutput</code>, you can even trace which atoms set a given bit — invaluable for explaining a model. These interpretability helpers need the full desktop build.</p>
+        <p class="lang-fa">۱۶۶ کلید عمومی MACCS مجموعه‌ای ثابت از پرسش‌های ساختاری قابل‌تفسیرند («آیا کربوکسیلیک‌اسید دارد؟»). و با <code>additionalOutput</code>ی مولدها، حتی می‌توانید ردیابی کنید کدام اتم‌ها یک بیت مشخص را روشن کرده‌اند — بی‌نظیر برای توضیح یک مدل. این کمک‌کننده‌های تفسیرپذیری به نسخه‌ی کامل دسکتاپ نیاز دارند.</p>
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
-          <pre><code class="language-python">from rdkit.Chem import MACCSkeys
+          <pre><code class="language-python">from rdkit import Chem, DataStructs
+from rdkit.Chem import MACCSkeys, AllChem
 
 ms = [Chem.MolFromSmiles(s) for s in ('CCOC', 'CCO', 'COC')]
 fps = [MACCSkeys.GenMACCSKeys(m) for m in ms]
@@ -974,9 +1124,9 @@ info = ao.GetBitInfoMap()   # {bit: ((atomIdx, radius), ...)}</code></pre>
         <h2><span class="n">12</span><span class="lang-en">Maximum Common Substructure</span><span class="lang-fa">بیشینه‌ی زیرساختار مشترک</span></h2>
         <p class="lang-en">Given a set of molecules, what's the biggest fragment they all share? That's the Maximum Common Substructure (MCS) — great for aligning series, defining scaffolds, and clustering. <code>FindMCS</code> works on two or more molecules and returns a SMARTS you can reuse as a query.</p>
         <p class="lang-fa">با داشتن مجموعه‌ای از مولکول‌ها، بزرگ‌ترین قطعه‌ای که همه‌شان مشترک دارند چیست؟ این بیشینه‌ی زیرساختار مشترک (MCS) است — عالی برای هم‌ترازی سری‌ها، تعریف داربست‌ها و خوشه‌بندی. <code>FindMCS</code> روی دو یا چند مولکول کار می‌کند و یک SMARTS برمی‌گرداند که می‌توانید به‌عنوان پرس‌وجو استفاده کنید.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -992,7 +1142,6 @@ print(res.numAtoms, res.numBonds)   # 10 10
 print(res.smartsString)             # reusable SMARTS query
 print(res.canceled)                 # False (didn't time out)
 
-# Tune matching: ring-only bonds, complete rings, timeouts ...
 res = rdFMCS.FindMCS(mols, ringMatchesRingOnly=True,
                      completeRingsOnly=True, timeout=10)</code></pre>
         </div>
@@ -1007,9 +1156,9 @@ res = rdFMCS.FindMCS(mols, ringMatchesRingOnly=True,
         <h2><span class="n">13</span><span class="lang-en">Picking Diverse Molecules</span><span class="lang-fa">انتخاب مولکول‌های متنوع</span></h2>
         <p class="lang-en">Sometimes you want a small, <em>maximally diverse</em> subset of a big library — for example to pick compounds for an initial screen. The efficient <strong>MaxMin</strong> algorithm does exactly this: it greedily picks molecules that are as far apart as possible in fingerprint space.</p>
         <p class="lang-fa">گاهی زیرمجموعه‌ای کوچک و <em>حداکثر متنوع</em> از یک کتابخانه‌ی بزرگ می‌خواهید — مثلاً برای انتخاب ترکیبات برای غربالگری اولیه. الگوریتم کارآمد <strong>MaxMin</strong> دقیقاً همین کار را می‌کند: حریصانه مولکول‌هایی را انتخاب می‌کند که در فضای اثرانگشت تا حد امکان از هم دور باشند.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -1030,52 +1179,54 @@ picks = [ms[i] for i in idx]     # the actual diverse molecules</code></pre>
       <!-- 14. DRAW -->
       <section id="draw" class="doc-section" data-aos="fade-up">
         <h2><span class="n">14</span><span class="lang-en">Drawing &amp; Highlighting</span><span class="lang-fa">رسم و برجسته‌سازی</span></h2>
-        <p class="lang-en">RDKit produces clean 2D depictions — single images, grids, or highlighted structures. The <code>Draw</code> module covers the quick cases; <code>rdMolDraw2D</code> gives you fine control (SVG or PNG, custom colors, annotations).</p>
-        <p class="lang-fa">RDKit نمایش‌های دوبعدی تمیز تولید می‌کند — تصاویر تکی، شبکه‌ای، یا ساختارهای برجسته‌شده. ماژول <code>Draw</code> موارد سریع را پوشش می‌دهد؛ <code>rdMolDraw2D</code> کنترل دقیق (SVG یا PNG، رنگ‌های سفارشی، حاشیه‌نویسی) به شما می‌دهد.</p>
-        <div class="code-wrap">
+        <p class="lang-en">RDKit produces clean 2D depictions — single images, grids, or highlighted structures. In the browser we render straight to SVG. Edit the SMILES below and hit Run to see your molecule drawn instantly.</p>
+        <p class="lang-fa">RDKit نمایش‌های دوبعدی تمیز تولید می‌کند — تصاویر تکی، شبکه‌ای، یا ساختارهای برجسته‌شده. در مرورگر ما مستقیم به SVG رندر می‌کنیم. SMILES زیر را ویرایش کنید و «اجرا» را بزنید تا مولکولتان فوراً رسم شود.</p>
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 from rdkit.Chem import Draw
 
 mol = Chem.MolFromSmiles('CC(=O)OC1=CC=CC=C1C(=O)O')   # aspirin
-Draw.MolToFile(mol, 'aspirin.png', size=(400, 300))
-
-# A grid with legends
-mols = [Chem.MolFromSmiles(s) for s in ('CCO', 'CCN', 'c1ccccc1')]
-img = Draw.MolsToGridImage(mols, molsPerRow=3,
-                           legends=['ethanol', 'ethylamine', 'benzene'])
-img.save('grid.png')</code></pre>
+print('Drawing:', Chem.MolToSmiles(mol))
+Draw.ShowMol(mol)   # renders the molecule as SVG below</code></pre>
+          <div class="cell-output"></div>
+        </div>
+        <div class="note">
+          <span class="lang-en">On your machine, <code>Draw.MolToFile(mol, 'aspirin.png')</code> and <code>Draw.MolsToGridImage(mols, legends=[...])</code> save PNG files (grids, custom colours, etc.).</span>
+          <span class="lang-fa">روی دستگاه خودتان، <code>Draw.MolToFile(mol, 'aspirin.png')</code> و <code>Draw.MolsToGridImage(mols, legends=[...])</code> فایل‌های PNG (شبکه‌ای، رنگ سفارشی و…) ذخیره می‌کنند.</span>
         </div>
 
         <h3 class="lang-en">Highlighting a substructure match</h3>
         <h3 class="lang-fa">برجسته‌سازی یک تطبیق زیرساختار</h3>
-        <p class="lang-en">A classic use is to draw a molecule with the atoms and bonds of a query lit up. This is where communicating <em>why</em> a molecule matched becomes visual and obvious.</p>
-        <p class="lang-fa">یک کاربرد کلاسیک، رسم مولکول با روشن‌کردن اتم‌ها و پیوندهای یک پرس‌وجو است. اینجاست که انتقال <em>اینکه چرا</em> یک مولکول منطبق شده، دیداری و بدیهی می‌شود.</p>
-        <div class="code-wrap">
+        <p class="lang-en">A classic use is to draw a molecule with the atoms and bonds of a query lit up. This makes it visual and obvious <em>why</em> a molecule matched. Try it live:</p>
+        <p class="lang-fa">یک کاربرد کلاسیک، رسم مولکول با روشن‌کردن اتم‌ها و پیوندهای یک پرس‌وجو است. این باعث می‌شود دیداری و بدیهی شود که <em>چرا</em> یک مولکول منطبق شده است. زنده امتحان کنید:</p>
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
-from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit.Chem import Draw
 
-mol = Chem.MolFromSmiles('c1cc(F)ccc1Cl')
+mol  = Chem.MolFromSmiles('c1cc(F)ccc1Cl')
 patt = Chem.MolFromSmarts('ClccccF')
-hit_atoms = list(mol.GetSubstructMatch(patt))
-hit_bonds = []
-for b in patt.GetBonds():
-    a1 = hit_atoms[b.GetBeginAtomIdx()]
-    a2 = hit_atoms[b.GetEndAtomIdx()]
-    hit_bonds.append(mol.GetBondBetweenAtoms(a1, a2).GetIdx())
+hit  = list(mol.GetSubstructMatch(patt))
+print('Matched atoms:', hit)
 
-d = rdMolDraw2D.MolDraw2DCairo(500, 500)   # or MolDraw2DSVG for SVG
-rdMolDraw2D.PrepareAndDrawMolecule(d, mol,
-    highlightAtoms=hit_atoms, highlightBonds=hit_bonds)
-d.FinishDrawing()
-open('highlight.png', 'wb').write(d.GetDrawingText())</code></pre>
+# highlight those atoms in the drawing
+Draw.ShowMol(mol, highlightAtoms=hit)</code></pre>
+          <div class="cell-output"></div>
         </div>
         <div class="note tip">
           <span class="lang-en">🖼️ Since 2020.09, PNGs written by <code>MolDraw2DCairo</code> embed the molecule's structure as invisible metadata. You can round-trip it back with <code>Chem.MolFromPNGString(png)</code> — so a saved image doubles as a data file.</span>
@@ -1089,12 +1240,12 @@ open('highlight.png', 'wb').write(d.GetDrawingText())</code></pre>
         <p class="lang-en">A SMILES describes connectivity, not shape. To get real 3D coordinates — needed for docking, shape comparison, or 3D descriptors — you <em>embed</em> the molecule. The modern default is <strong>ETKDGv3</strong>, which uses torsion-angle preferences from crystal structures, so you usually don't even need a follow-up force-field cleanup.</p>
         <p class="lang-fa">یک SMILES اتصال را توصیف می‌کند، نه شکل را. برای به‌دست‌آوردن مختصات سه‌بعدی واقعی — که برای داکینگ، مقایسه‌ی شکل یا توصیفگرهای سه‌بعدی لازم است — مولکول را <em>تعبیه (embed)</em> می‌کنید. پیش‌فرض مدرن <strong>ETKDGv3</strong> است که از ترجیحات زاویه‌ی پیچشی در ساختارهای بلوری استفاده می‌کند، پس معمولاً حتی به پاک‌سازیِ بعدی با میدان نیرو هم نیاز ندارید.</p>
         <div class="note warn">
-          <span class="lang-en">⚠️ <strong>Always add hydrogens before embedding.</strong> Explicit Hs are essential for good geometry. You can strip them again afterward if you don't need them for analysis.</span>
-          <span class="lang-fa">⚠️ <strong>همیشه پیش از تعبیه، هیدروژن اضافه کنید.</strong> هیدروژن‌های صریح برای هندسه‌ی خوب ضروری‌اند. اگر برای تحلیل به آن‌ها نیاز ندارید، بعداً می‌توانید دوباره حذفشان کنید.</span>
+          <span class="lang-en">⚠️ <strong>Always add hydrogens before embedding.</strong> Explicit Hs are essential for good geometry. You can strip them again afterward if you don't need them for analysis. (3D embedding + force fields need the full desktop build, so this is a Local cell.)</span>
+          <span class="lang-fa">⚠️ <strong>همیشه پیش از تعبیه، هیدروژن اضافه کنید.</strong> هیدروژن‌های صریح برای هندسه‌ی خوب ضروری‌اند. اگر برای تحلیل به آن‌ها نیاز ندارید، بعداً می‌توانید دوباره حذفشان کنید. (تعبیه‌ی سه‌بعدی و میدان‌های نیرو به نسخه‌ی کامل دسکتاپ نیاز دارند، پس این یک سلول Local است.)</span>
         </div>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -1116,14 +1267,17 @@ print(Chem.MolToMolBlock(m3)[:60])   # now has 3D coordinates</code></pre>
 
         <h3 class="lang-en">Multiple conformers &amp; RMSD</h3>
         <h3 class="lang-fa">چند کانفورمر و RMSD</h3>
-        <p class="lang-en">For a flexible molecule you'll want several candidate shapes. Generate many at once with <code>EmbedMultipleConfs</code>, then align them and measure how different they are with RMSD. Set <code>numThreads=0</code> to use all CPU cores for these embarrassingly parallel jobs.</p>
-        <p class="lang-fa">برای یک مولکول انعطاف‌پذیر، چند شکل نامزد می‌خواهید. با <code>EmbedMultipleConfs</code> چندتا را یک‌جا تولید کنید، سپس آن‌ها را هم‌تراز کرده و با RMSD اندازه بگیرید چقدر متفاوت‌اند. برای استفاده از همه‌ی هسته‌های CPU در این کارهای به‌طرز خجالت‌آوری موازی، <code>numThreads=0</code> بگذارید.</p>
-        <div class="code-wrap">
+        <p class="lang-en">For a flexible molecule you'll want several candidate shapes. Generate many at once with <code>EmbedMultipleConfs</code>, then align them and measure how different they are with RMSD. Set <code>numThreads=0</code> to use all CPU cores.</p>
+        <p class="lang-fa">برای یک مولکول انعطاف‌پذیر، چند شکل نامزد می‌خواهید. با <code>EmbedMultipleConfs</code> چندتا را یک‌جا تولید کنید، سپس آن‌ها را هم‌تراز کرده و با RMSD اندازه بگیرید چقدر متفاوت‌اند. برای استفاده از همه‌ی هسته‌های CPU، <code>numThreads=0</code> بگذارید.</p>
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
-          <pre><code class="language-python">m = Chem.AddHs(Chem.MolFromSmiles('C1CCC1OC'))
+          <pre><code class="language-python">from rdkit import Chem
+from rdkit.Chem import AllChem
+
+m = Chem.AddHs(Chem.MolFromSmiles('C1CCC1OC'))
 params = AllChem.ETKDGv3()
 params.numThreads = 0                 # use all cores
 
@@ -1132,7 +1286,6 @@ print(len(cids))                      # 10 conformers
 
 rmslist = []
 AllChem.AlignMolConformers(m, RMSlist=rmslist)   # align + get RMSDs
-# Optionally relax every conformer with MMFF94
 res = AllChem.MMFFOptimizeMoleculeConfs(m, numThreads=0)</code></pre>
         </div>
         <div class="note">
@@ -1146,9 +1299,9 @@ res = AllChem.MMFFOptimizeMoleculeConfs(m, numThreads=0)</code></pre>
         <h2><span class="n">16</span><span class="lang-en">Chemical Reactions</span><span class="lang-fa">واکنش‌های شیمیایی</span></h2>
         <p class="lang-en">RDKit can <em>apply</em> reactions to molecules. You describe a transformation with reaction SMARTS (<code>reactants &gt;&gt; products</code>), where atom map numbers like <code>[C:1]</code> track which atom goes where. <code>RunReactants</code> then generates every possible product set.</p>
         <p class="lang-fa">RDKit می‌تواند واکنش‌ها را روی مولکول‌ها <em>اعمال</em> کند. یک تبدیل را با SMARTSِ واکنش (<code>واکنش‌دهنده‌ها &gt;&gt; محصولات</code>) توصیف می‌کنید، که در آن شماره‌های نگاشت اتمی مانند <code>[C:1]</code> ردگیری می‌کنند کدام اتم به کجا می‌رود. سپس <code>RunReactants</code> هر مجموعه‌ی محصول ممکن را تولید می‌کند.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -1162,23 +1315,22 @@ products = rxn.RunReactants((Chem.MolFromSmiles('CC(=O)O'),   # acetic acid
                              Chem.MolFromSmiles('NC')))        # methylamine
 print(Chem.MolToSmiles(products[0][0]))   # 'CNC(C)=O'
 
-# One acid with two -OH groups -> two possible products
 ps = rxn.RunReactants((Chem.MolFromSmiles('C(COC(=O)O)C(=O)O'),
                        Chem.MolFromSmiles('NC')))
 print(len(ps))   # 2</code></pre>
         </div>
         <div class="note warn">
-          <span class="lang-en">⚠️ Reaction products are <strong>not sanitized automatically</strong>. Before using them, call <code>prod.UpdatePropertyCache()</code> and/or <code>Chem.SanitizeMol(prod)</code>. Also, loose SMARTS can match unintended sites (e.g. an existing amide N); you can shield atoms by setting the <code>_protected</code> property on them so they sit out the reaction.</span>
-          <span class="lang-fa">⚠️ محصولات واکنش <strong>به‌طور خودکار پاک‌سازی نمی‌شوند</strong>. پیش از استفاده، <code>prod.UpdatePropertyCache()</code> و/یا <code>Chem.SanitizeMol(prod)</code> را فراخوانی کنید. همچنین SMARTSِ شل می‌تواند جایگاه‌های ناخواسته (مثلاً نیتروژن آمیدیِ موجود) را منطبق کند؛ می‌توانید با تنظیم ویژگی <code>_protected</code> روی اتم‌ها آن‌ها را محافظت کنید تا از واکنش کنار بمانند.</span>
+          <span class="lang-en">⚠️ Reaction products are <strong>not sanitized automatically</strong>. Before using them, call <code>prod.UpdatePropertyCache()</code> and/or <code>Chem.SanitizeMol(prod)</code>. Also, loose SMARTS can match unintended sites; you can shield atoms by setting the <code>_protected</code> property on them so they sit out the reaction.</span>
+          <span class="lang-fa">⚠️ محصولات واکنش <strong>به‌طور خودکار پاک‌سازی نمی‌شوند</strong>. پیش از استفاده، <code>prod.UpdatePropertyCache()</code> و/یا <code>Chem.SanitizeMol(prod)</code> را فراخوانی کنید. همچنین SMARTSِ شل می‌تواند جایگاه‌های ناخواسته را منطبق کند؛ می‌توانید با تنظیم ویژگی <code>_protected</code> روی اتم‌ها آن‌ها را محافظت کنید تا از واکنش کنار بمانند.</span>
         </div>
 
         <h3 class="lang-en">Fragmentation: RECAP &amp; BRICS</h3>
         <h3 class="lang-fa">قطعه‌سازی: RECAP و BRICS</h3>
         <p class="lang-en">The flip side of building molecules is breaking them apart along realistic, synthetically sensible bonds. <strong>RECAP</strong> and <strong>BRICS</strong> both do this — handy for building fragment libraries or generating new ideas by recombining pieces.</p>
         <p class="lang-fa">روی دیگرِ ساختِ مولکول‌ها، شکستنِ آن‌ها در امتداد پیوندهای واقع‌گرایانه و از نظر سنتزی معقول است. هم <strong>RECAP</strong> و هم <strong>BRICS</strong> این کار را می‌کنند — مفید برای ساخت کتابخانه‌های قطعه یا تولید ایده‌های جدید با ترکیب دوباره‌ی قطعات.</p>
-        <div class="code-wrap">
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -1187,9 +1339,7 @@ from rdkit.Chem import BRICS
 m = Chem.MolFromSmiles('c1ccccc1OCCOC(=O)CC')
 frags = BRICS.BRICSDecompose(m)      # unique, synthetically sensible fragments
 print(sorted(frags))
-# Dummy atoms ([*]) mark where bonds were cut
 
-# BRICS can also recombine fragments into new molecules (a generator)
 builder = BRICS.BRICSBuild([Chem.MolFromSmiles(f) for f in frags])
 new_mol = next(builder)
 new_mol.UpdatePropertyCache(strict=False)   # products need cleanup</code></pre>
@@ -1204,12 +1354,16 @@ new_mol.UpdatePropertyCache(strict=False)   # products need cleanup</code></pre>
 
         <h3 class="lang-en">Lipinski's Rule of 5</h3>
         <h3 class="lang-fa">قانون پنجِ لیپینسکی</h3>
-        <p class="lang-en">A quick oral-bioavailability heuristic: poor absorption is likely if a molecule breaks more than one of — MW ≤ 500, H-bond donors ≤ 5, H-bond acceptors ≤ 10, LogP ≤ 5. It's a rule of thumb, not a law (plenty of approved drugs break it), but it's a cheap first filter.</p>
-        <p class="lang-fa">یک قاعده‌ی سرانگشتیِ سریع برای دسترسی‌زیستیِ خوراکی: جذب ضعیف محتمل است اگر مولکول بیش از یکی از این‌ها را نقض کند — وزن مولکولی ≤ ۵۰۰، دهنده‌های پیوند هیدروژنی ≤ ۵، گیرنده‌ها ≤ ۱۰، LogP ≤ ۵. این یک قاعده‌ی سرانگشتی است، نه قانون (بسیاری داروهای تأییدشده آن را نقض می‌کنند)، اما یک فیلتر اولیه‌ی ارزان است.</p>
-        <div class="code-wrap">
+        <p class="lang-en">A quick oral-bioavailability heuristic: poor absorption is likely if a molecule breaks more than one of — MW ≤ 500, H-bond donors ≤ 5, H-bond acceptors ≤ 10, LogP ≤ 5. It's a rule of thumb, not a law, but it's a cheap first filter. Edit the SMILES and run it live:</p>
+        <p class="lang-fa">یک قاعده‌ی سرانگشتیِ سریع برای دسترسی‌زیستیِ خوراکی: جذب ضعیف محتمل است اگر مولکول بیش از یکی از این‌ها را نقض کند — وزن مولکولی ≤ ۵۰۰، دهنده‌های پیوند هیدروژنی ≤ ۵، گیرنده‌ها ≤ ۱۰، LogP ≤ ۵. این یک قاعده‌ی سرانگشتی است، نه قانون، اما یک فیلتر اولیه‌ی ارزان است. SMILES را ویرایش و زنده اجرا کنید:</p>
+        <div class="code-wrap" data-runnable="live">
           <div class="code-head">
-            <span class="fname">python</span>
-            <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            <span class="fname">python <span class="cap-badge cap-live">Live</span></span>
+            <span class="code-head-btns">
+              <button class="run-btn" onclick="runCell(this)">▶ <span class="lang-en">Run</span><span class="lang-fa">اجرا</span></button>
+              <button class="reset-btn" onclick="resetCell(this)"><span class="lang-en">Reset</span><span class="lang-fa">بازنشانی</span></button>
+              <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
+            </span>
           </div>
           <pre><code class="language-python">from rdkit import Chem
 from rdkit.Chem import Descriptors
@@ -1222,17 +1376,19 @@ checks = [
     Descriptors.NOCount(mol)   &lt;= 10,   # H-bond acceptors
     Descriptors.MolLogP(mol)   &lt;= 5,
 ]
-passes_ro5 = checks.count(True) &gt;= 3    # allowed at most one violation
-print(passes_ro5)                       # True</code></pre>
+passes_ro5 = checks.count(True) &gt;= 3    # at most one violation
+print('Checks:', checks)
+print('Passes Rule of 5:', passes_ro5)</code></pre>
+          <div class="cell-output"></div>
         </div>
 
         <h3 class="lang-en">Screening out unwanted substructures</h3>
         <h3 class="lang-fa">حذف زیرساختارهای ناخواسته</h3>
-        <p class="lang-en">RDKit's <code>FilterCatalog</code> ships with curated blocklists: <strong>PAINS</strong> (frequent false-positives in assays), <strong>Brenk</strong> (toxic/reactive groups), and <strong>NIH</strong>. You can check one catalog, or all of them at once and read back exactly which rule fired.</p>
-        <p class="lang-fa">‏<code>FilterCatalog</code>ی RDKit با فهرست‌های مسدودسازیِ گلچین‌شده همراه است: <strong>PAINS</strong> (مثبت‌کاذب‌های پرتکرار در سنجش‌ها)، <strong>Brenk</strong> (گروه‌های سمی/واکنش‌پذیر) و <strong>NIH</strong>. می‌توانید یک کاتالوگ یا همه را یک‌جا بررسی کرده و دقیقاً بخوانید کدام قاعده فعال شده است.</p>
-        <div class="code-wrap">
+        <p class="lang-en">RDKit's <code>FilterCatalog</code> ships with curated blocklists: <strong>PAINS</strong>, <strong>Brenk</strong>, and <strong>NIH</strong>. These curated catalogs live in the full desktop build.</p>
+        <p class="lang-fa">‏<code>FilterCatalog</code>ی RDKit با فهرست‌های مسدودسازیِ گلچین‌شده همراه است: <strong>PAINS</strong>، <strong>Brenk</strong> و <strong>NIH</strong>. این کاتالوگ‌های گلچین‌شده در نسخه‌ی کامل دسکتاپ قرار دارند.</p>
+        <div class="code-wrap" data-runnable="local">
           <div class="code-head">
-            <span class="fname">python</span>
+            <span class="fname">python <span class="cap-badge cap-local">Local</span></span>
             <button class="copy-btn" onclick="copyCode(this)"><span class="lang-en">Copy</span><span class="lang-fa">کپی</span></button>
           </div>
           <pre><code class="language-python">from rdkit import Chem
@@ -1240,7 +1396,6 @@ from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
 
 mol = Chem.MolFromSmiles('CC(=O)Nc1ccc(O)cc1')
 
-# Check ALL built-in filter sets at once
 params = FilterCatalogParams()
 params.AddCatalog(FilterCatalogParams.FilterCatalogs.ALL)
 catalog = FilterCatalog(params)
@@ -1264,6 +1419,7 @@ else:
           <li><strong>Pickle for speed.</strong> Store frequently-reused molecule sets as pickles instead of re-parsing files.</li>
           <li><strong>The SSSR caveat.</strong> "Smallest set of smallest rings" isn't unique for symmetric molecules — RDKit's <code>GetSymmSSSR</code> returns a symmetric (small, not smallest) set on purpose.</li>
           <li><strong>Editing in place.</strong> For structural surgery use <code>Chem.RWMol</code>; wrap batch edits in a <code>with</code> block or <code>BeginBatchEdit()</code>/<code>CommitBatchEdit()</code>.</li>
+          <li><strong>Browser vs desktop.</strong> The live cells here run the RDKit WebAssembly core. For 3D, reactions, filter catalogs, file I/O and pandas, run the <span class="cap-badge cap-local">Local</span> cells after <code>pip install rdkit</code>.</li>
           <li><strong>Getting help.</strong> Everything is documented in docstrings — <code>help(mol.GetNumAtoms)</code> right in your Python session.</li>
         </ul>
         <ul class="lang-fa">
@@ -1274,6 +1430,7 @@ else:
           <li><strong>برای سرعت pickle کنید.</strong> مجموعه‌های پرتکرار مولکول را به‌جای تجزیه‌ی دوباره‌ی فایل، به‌صورت pickle ذخیره کنید.</li>
           <li><strong>هشدار SSSR.</strong> «کوچک‌ترین مجموعه‌ی کوچک‌ترین حلقه‌ها» برای مولکول‌های متقارن یکتا نیست — <code>GetSymmSSSR</code>ی RDKit عمداً یک مجموعه‌ی متقارن (کوچک، نه کوچک‌ترین) برمی‌گرداند.</li>
           <li><strong>ویرایش درجا.</strong> برای جراحی ساختاری از <code>Chem.RWMol</code> استفاده کنید؛ ویرایش‌های دسته‌ای را در بلوک <code>with</code> یا <code>BeginBatchEdit()</code>/<code>CommitBatchEdit()</code> بپیچید.</li>
+          <li><strong>مرورگر در برابر دسکتاپ.</strong> سلول‌های زنده‌ی این‌جا هسته‌ی WebAssembly رِی‌دی‌کیت را اجرا می‌کنند. برای سه‌بعدی، واکنش‌ها، کاتالوگ‌های فیلتر، ورودی/خروجی فایل و pandas، سلول‌های <span class="cap-badge cap-local">Local</span> را پس از <code>pip install rdkit</code> اجرا کنید.</li>
           <li><strong>گرفتن کمک.</strong> همه‌چیز در docstringها مستند شده — <code>help(mol.GetNumAtoms)</code> درست در نشست پایتون خودتان.</li>
         </ul>
 
@@ -1285,9 +1442,9 @@ else:
 
       <footer>
         <div class="footer-nav">
-          <a href="index.html"><span class="lang-en">🏠 Home</span><span class="lang-fa">🏠 خانه</span></a>
-          <a href="index.html#tutorials"><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></a>
-          <a href="index.html#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
+          <a href="https://msnnamazi.github.io"><span class="lang-en">🏠 Home</span><span class="lang-fa">🏠 خانه</span></a>
+          <a href="https://msnnamazi.github.io/tutorials/index.html"><span class="lang-en">Tutorials</span><span class="lang-fa">آموزش‌ها</span></a>
+          <a href="https://msnnamazi.github.io#contact"><span class="lang-en">Contact</span><span class="lang-fa">تماس</span></a>
         </div>
         <span class="lang-en">© 2026 Mohsen Namazi · RDKit Tutorial.</span>
         <span class="lang-fa">© ۱۴۰۴ محسن نمازی · آموزش RDKit.</span>
@@ -1297,6 +1454,15 @@ else:
 
   <button id="toTop" title="Back to top">↑</button>
 
+  <!-- Floating runtime status pill -->
+  <div id="rt-status" title="In-browser Python runtime">
+    <span class="dot"></span>
+    <span class="rt-text">
+      <span class="lang-en">Runtime idle — press ▶ Run to start</span>
+      <span class="lang-fa">محیط اجرا آماده — برای شروع ▶ اجرا را بزنید</span>
+    </span>
+  </div>
+
   <!-- ============ LIBRARIES ============ -->
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/slim@3/tsparticles.slim.bundle.min.js"></script>
@@ -1305,11 +1471,22 @@ else:
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
 
+  <!-- CodeMirror (editable cells) -->
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+
+  <!-- Pyodide (CPython -> WASM) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+  <!-- RDKit.js (official RDKit WebAssembly build) -->
+  <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
+
   <script>
-    /* ---------- AOS init ---------- */
+    /* ============================================================
+       UI: AOS, theme, language, copy, particles, TOC, progress
+       (unchanged from your original page except where noted)
+    ============================================================ */
     AOS.init({ duration: 800, once: true, offset: 60 });
 
-    /* ---------- Theme toggle ---------- */
     const themeBtn = document.getElementById('themeBtn');
     const root = document.documentElement;
     function setTheme(mode) {
@@ -1317,13 +1494,16 @@ else:
       themeBtn.textContent = mode === 'dark' ? '🌙' : '☀️';
       localStorage.setItem('theme', mode);
       loadParticles(mode);
+      // keep editor themes readable in light mode
+      document.querySelectorAll('.CodeMirror').forEach(cm => {
+        cm.classList.toggle('cm-s-material-darker', true);
+      });
     }
     themeBtn.addEventListener('click', () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       setTheme(next);
     });
 
-    /* ---------- Language toggle ---------- */
     function toggleLang() {
       const body = document.body;
       body.classList.toggle('fa');
@@ -1333,17 +1513,19 @@ else:
       localStorage.setItem('lang', isFa ? 'fa' : 'en');
     }
 
-    /* ---------- Copy-to-clipboard for code blocks ---------- */
     function copyCode(btn) {
-      const code = btn.closest('.code-wrap').querySelector('code').innerText;
-      navigator.clipboard.writeText(code).then(() => {
+      // If this is an editable (CodeMirror) cell, read from the editor
+      const wrap = btn.closest('.code-wrap');
+      let text;
+      if (wrap._cm) { text = wrap._cm.getValue(); }
+      else { text = wrap.querySelector('code').innerText; }
+      navigator.clipboard.writeText(text).then(() => {
         const original = btn.innerHTML;
         btn.textContent = '✓';
         setTimeout(() => { btn.innerHTML = original; }, 1500);
       });
     }
 
-    /* ---------- tsParticles ---------- */
     function loadParticles(mode) {
       const color = mode === 'dark' ? '#6ea8fe' : '#2563eb';
       tsParticles.load('tsparticles', {
@@ -1364,7 +1546,6 @@ else:
       });
     }
 
-    /* ---------- Active TOC highlight on scroll ---------- */
     const tocLinks = document.querySelectorAll('.toc a[href^="#"]');
     const sections = document.querySelectorAll('.doc-section');
     const spy = new IntersectionObserver((entries) => {
@@ -1377,7 +1558,6 @@ else:
     }, { rootMargin: '-40% 0px -55% 0px' });
     sections.forEach(s => spy.observe(s));
 
-    /* ---------- Reading progress bar ---------- */
     const progress = document.getElementById('progress');
     window.addEventListener('scroll', () => {
       const h = document.documentElement;
@@ -1385,18 +1565,395 @@ else:
       progress.style.width = scrolled + '%';
     });
 
-    /* ---------- Scroll-to-top ---------- */
     const toTop = document.getElementById('toTop');
     window.addEventListener('scroll', () => {
       toTop.classList.toggle('show', window.scrollY > 500);
     });
     toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-    /* ---------- Restore saved preferences ---------- */
+    /* ============================================================
+       LIVE CODE RUNTIME
+       Pyodide (Python->WASM) + RDKit.js (RDKit WASM) bridge.
+    ============================================================ */
+    let pyodide = null;         // the Python runtime
+    let rdkitJS = null;         // the RDKit.js WASM module
+    let bootPromise = null;     // ensures we only boot once
+
+    const rtStatus = document.getElementById('rt-status');
+    function setStatus(state, en, fa) {
+      rtStatus.className = state;
+      rtStatus.querySelector('.lang-en').textContent = en;
+      rtStatus.querySelector('.lang-fa').textContent = fa;
+    }
+
+    // Boot both runtimes lazily on the first Run click.
+    async function bootRuntime() {
+      if (bootPromise) return bootPromise;
+      bootPromise = (async () => {
+        setStatus('loading',
+          'Loading Python + RDKit (first time only)…',
+          'در حال بارگذاری پایتون و RDKit (فقط بار اول)…');
+
+        // 1) RDKit.js WASM engine
+        rdkitJS = await initRDKitModule();
+
+        // 2) Pyodide (CPython in WASM)
+        pyodide = await loadPyodide();
+
+        // 3) Expose the JS RDKit engine to Python as a global.
+        pyodide.registerJsModule('_rdkitjs_bridge', { rdkit: rdkitJS });
+
+        // 4) Inject a small pure-Python "rdkit" shim that forwards
+        //    core calls to the JS engine. This is what lets
+        //    `from rdkit import Chem` actually work in the browser.
+        pyodide.runPython(RDKIT_SHIM);
+
+        setStatus('ready',
+          'Runtime ready — RDKit is live in your browser.',
+          'محیط آماده است — RDKit در مرورگر شما زنده است.');
+      })();
+      return bootPromise;
+    }
+
+    /* ---- The Python-side shim (kept as a JS string) ------------
+       It defines just enough of the RDKit Python API to cover the
+       "Live" cells, forwarding the real work to RDKit.js.        */
+    const RDKIT_SHIM = String.raw`
+import sys, json, types
+from _rdkitjs_bridge import rdkit as _js   # the RDKit.js module
+
+# ---- output sinks the JS side reads back ----
+_MOL_SVGS = []          # SVG strings queued by Draw.ShowMol
+
+# ---------- Mol wrapper ----------
+class Mol:
+    def __init__(self, jsmol, smiles=None, is_query=False):
+        self._js = jsmol            # underlying RDKit.js JSMol
+        self._smiles = smiles
+        self._is_query = is_query
+    # ---- graph queries ----
+    def GetNumAtoms(self):
+        d = json.loads(self._js.get_descriptors())
+        return int(d.get('NumHeavyAtoms', d.get('amw', 0)) and d['NumHeavyAtoms'])
+    def _descr(self):
+        return json.loads(self._js.get_descriptors())
+    def GetAtoms(self):
+        return [Atom(self, i) for i in range(self.GetNumAtoms())]
+    def GetAtomWithIdx(self, i):
+        return Atom(self, i)
+    # ---- substructure ----
+    def HasSubstructMatch(self, patt, useChirality=False):
+        res = json.loads(self._js.get_substruct_match(patt._js))
+        return bool(res) and len(res.get('atoms', [])) > 0
+    def GetSubstructMatch(self, patt):
+        res = json.loads(self._js.get_substruct_match(patt._js))
+        return tuple(res.get('atoms', []))
+    def GetSubstructMatches(self, patt):
+        res = json.loads(self._js.get_substruct_matches(patt._js))
+        return tuple(tuple(m['atoms']) for m in res)
+    def GetSubstructMatch_atoms(self, patt):
+        return list(self.GetSubstructMatch(patt))
+
+class Atom:
+    _SYMBOLS = None
+    def __init__(self, mol, idx):
+        self._mol = mol; self._idx = idx
+    def GetIdx(self): return self._idx
+    def GetSymbol(self):
+        # RDKit.js exposes atoms via the CXSMILES / molblock; parse molblock
+        return _atom_symbol(self._mol, self._idx)
+    def GetAtomicNum(self):
+        from_sym = {'H':1,'C':6,'N':7,'O':8,'F':9,'P':15,'S':16,'Cl':17,'Br':35,'I':53}
+        return from_sym.get(self.GetSymbol(), 0)
+    def GetNeighbors(self):
+        nb = _atom_neighbors(self._mol, self._idx)
+        return [Atom(self._mol, j) for j in nb]
+    def IsInRing(self):
+        return _atom_in_ring(self._mol, self._idx)
+    def IsInRingSize(self, n):
+        return _atom_in_ring_size(self._mol, self._idx, n)
+
+# ---------- molblock helpers (parse the V2000 block from RDKit.js) ----------
+def _molblock(mol):
+    return mol._js.get_molblock()
+
+def _parse_block(mol):
+    mb = _molblock(mol)
+    lines = mb.splitlines()
+    counts = lines[3]
+    na = int(counts[0:3]); nb = int(counts[3:6])
+    atoms = []
+    for i in range(na):
+        parts = lines[4+i].split()
+        atoms.append(parts[3])           # element symbol
+    bonds = []
+    for j in range(nb):
+        ln = lines[4+na+j]
+        a = int(ln[0:3]) - 1; b = int(ln[3:6]) - 1
+        bonds.append((a, b))
+    return atoms, bonds
+
+def _atom_symbol(mol, idx):
+    atoms, _ = _parse_block(mol); return atoms[idx]
+def _atom_neighbors(mol, idx):
+    _, bonds = _parse_block(mol)
+    out = []
+    for a, b in bonds:
+        if a == idx: out.append(b)
+        elif b == idx: out.append(a)
+    return out
+def _rings(mol):
+    # ring atom sets via RDKit.js descriptors JSON is not exposed;
+    # fall back to SSSR from the molblock using a simple cycle finder.
+    atoms, bonds = _parse_block(mol)
+    return _find_rings(len(atoms), bonds)
+def _atom_in_ring(mol, idx):
+    return any(idx in r for r in _rings(mol))
+def _atom_in_ring_size(mol, idx, n):
+    return any(len(r) == n and idx in r for r in _rings(mol))
+
+def _find_rings(n, bonds):
+    # minimal cycle basis good enough for teaching examples
+    from itertools import combinations
+    adj = {i: set() for i in range(n)}
+    for a,b in bonds: adj[a].add(b); adj[b].add(a)
+    rings = []
+    def dfs(start, cur, visited, path):
+        for nxt in adj[cur]:
+            if nxt == start and len(path) >= 3:
+                rings.append(frozenset(path))
+            elif nxt not in visited:
+                dfs(start, nxt, visited | {nxt}, path + [nxt])
+    for s in range(n):
+        dfs(s, s, {s}, [s])
+    uniq = []
+    for r in set(rings):
+        if r not in uniq: uniq.append(r)
+    # keep only the smallest rings (SSSR-ish)
+    uniq.sort(key=len)
+    kept = []
+    covered = set()
+    for r in uniq:
+        if not r.issubset(covered) or len(kept) < 2:
+            kept.append(set(r)); covered |= r
+    return kept
+
+# ---------- the Chem module ----------
+class _Chem(types.ModuleType):
+    def MolFromSmiles(self, smi):
+        jm = _js.get_mol(smi)
+        if jm is None or not jm.is_valid():
+            return None
+        return Mol(jm, smiles=smi)
+    def MolFromSmarts(self, sma):
+        jm = _js.get_qmol(sma)
+        if jm is None: return None
+        return Mol(jm, smiles=sma, is_query=True)
+    def MolToSmiles(self, mol, isomericSmiles=True):
+        return mol._js.get_smiles()
+    def AddHs(self, mol):
+        jm = _js.get_mol(mol._js.get_smiles(), json.dumps({"removeHs": False, "addHs": True}))
+        return Mol(jm)
+    def RemoveHs(self, mol):
+        jm = _js.get_mol(mol._js.get_smiles())
+        return Mol(jm)
+    def GetSymmSSSR(self, mol):
+        return [tuple(sorted(r)) for r in _rings(mol)]
+
+class _RingInfoModuleHelper:  # tiny helper object
+    pass
+def _mol_ringinfo(self):
+    rings = _rings(self)
+    class RI:
+        def NumAtomRings(s, idx): return sum(1 for r in rings if idx in r)
+        def IsAtomInRingOfSize(s, idx, n): return any(idx in r and len(r)==n for r in rings)
+    return RI()
+Mol.GetRingInfo = _mol_ringinfo
+
+# ---------- Descriptors ----------
+class _Descriptors(types.ModuleType):
+    def _d(self, mol): return json.loads(mol._js.get_descriptors())
+    def MolWt(self, mol):        return self._d(mol)['amw']
+    def MolLogP(self, mol):      return self._d(mol)['CrippenClogP']
+    def NumHDonors(self, mol):   return int(self._d(mol)['NumHBD'])
+    def NumHAcceptors(self, mol):return int(self._d(mol)['NumHBA'])
+    def NHOHCount(self, mol):    return int(self._d(mol)['NumHBD'])
+    def NOCount(self, mol):      return int(self._d(mol)['NumHBA'])
+    def TPSA(self, mol):         return self._d(mol)['tpsa']
+
+# ---------- DataStructs ----------
+def _bits(fp_json):
+    d = json.loads(fp_json)
+    return set(i for i,v in enumerate(d.get('bits', d.get('onBits', []))) if True) if False else set(d.get('onBits', []))
+
+class _DataStructs(types.ModuleType):
+    def TanimotoSimilarity(self, a, b):
+        A, B = set(a), set(b)
+        if not A and not B: return 0.0
+        return len(A & B) / len(A | B)
+    def DiceSimilarity(self, a, b):
+        A, B = set(a), set(b)
+        if not A and not B: return 0.0
+        return 2*len(A & B) / (len(A) + len(B))
+
+# ---------- AllChem: fingerprint generators ----------
+class _MorganGen:
+    def __init__(self, radius=2): self.radius = radius
+    def GetFingerprint(self, mol):
+        details = json.dumps({"radius": self.radius, "nBits": 2048})
+        fp = json.loads(mol._js.get_morgan_fp_as_uint8array and
+                        mol._js.get_morgan_fp(details) or mol._js.get_morgan_fp(details))
+        # RDKit.js get_morgan_fp returns a bit string
+        s = mol._js.get_morgan_fp(details)
+        return frozenset(i for i,ch in enumerate(s) if ch == '1')
+
+class _AllChem(types.ModuleType):
+    def GetMorganGenerator(self, radius=2, **kw): return _MorganGen(radius)
+    def GetRDKitFPGenerator(self, **kw):          return _MorganGen(2)
+
+# ---------- Draw ----------
+class _Draw(types.ModuleType):
+    def ShowMol(self, mol, highlightAtoms=None, size=(350,300), **kw):
+        details = {}
+        if highlightAtoms: details["atoms"] = list(highlightAtoms)
+        details["width"] = size[0]; details["height"] = size[1]
+        svg = mol._js.get_svg_with_highlights(json.dumps(details)) \
+              if highlightAtoms else mol._js.get_svg(size[0], size[1])
+        _MOL_SVGS.append(svg)
+        return None
+    def MolToImage(self, mol, size=(350,300)):
+        _MOL_SVGS.append(mol._js.get_svg(size[0], size[1])); return None
+
+# ---- assemble the package tree ----
+rdkit = types.ModuleType('rdkit')
+Chem = _Chem('rdkit.Chem')
+Chem.Descriptors  = _Descriptors('rdkit.Chem.Descriptors')
+Chem.Draw         = _Draw('rdkit.Chem.Draw')
+Chem.AllChem      = _AllChem('rdkit.Chem.AllChem')
+rdkit.Chem = Chem
+rdkit.DataStructs = _DataStructs('rdkit.DataStructs')
+
+sys.modules['rdkit'] = rdkit
+sys.modules['rdkit.Chem'] = Chem
+sys.modules['rdkit.Chem.Descriptors'] = Chem.Descriptors
+sys.modules['rdkit.Chem.Draw'] = Chem.Draw
+sys.modules['rdkit.Chem.AllChem'] = Chem.AllChem
+sys.modules['rdkit.DataStructs'] = rdkit.DataStructs
+
+def _collect_svgs():
+    out = list(_MOL_SVGS); _MOL_SVGS.clear(); return out
+`;
+
+    /* ---- Turn every code-wrap into a CodeMirror editor + wire buttons ---- */
+    function initEditors() {
+      document.querySelectorAll('.code-wrap').forEach(wrap => {
+        const codeEl = wrap.querySelector('pre code');
+        if (!codeEl) return;
+        const isLive = wrap.getAttribute('data-runnable') === 'live';
+        // decode HTML entities (&lt; etc.) into real text
+        const initial = codeEl.textContent;
+        if (isLive) {
+          const pre = wrap.querySelector('pre');
+          const cm = CodeMirror(function (el) {
+            pre.replaceWith(el);
+          }, {
+            value: initial,
+            mode: 'python',
+            theme: 'material-darker',
+            lineNumbers: true,
+            indentUnit: 4,
+            viewportMargin: Infinity   // auto-grow height
+          });
+          wrap._cm = cm;
+          wrap._initialCode = initial;
+        }
+      });
+      // re-run Prism only on the non-editable (Local / bash) blocks
+      Prism.highlightAll();
+    }
+
+    /* ---- Run a single Live cell ---- */
+    async function runCell(btn) {
+      const wrap = btn.closest('.code-wrap');
+      const out  = wrap.querySelector('.cell-output');
+      const cm   = wrap._cm;
+      btn.disabled = true;
+      const label = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        await bootRuntime();
+
+        const userCode = cm ? cm.getValue() : wrap.querySelector('code').innerText;
+
+        // Capture stdout/stderr, run the user's code, collect any SVGs.
+        pyodide.runPython(`
+import sys, io
+_stdout = sys.stdout; _stderr = sys.stderr
+sys.stdout = io.StringIO(); sys.stderr = io.StringIO()
+_ERR = None
+`);
+        let runErr = null;
+        try {
+          pyodide.runPython(userCode);
+        } catch (e) {
+          runErr = e;
+        }
+        const stdout = pyodide.runPython('sys.stdout.getvalue()');
+        const stderr = pyodide.runPython('sys.stderr.getvalue()');
+        const svgs   = pyodide.runPython('_collect_svgs()').toJs();
+        pyodide.runPython('sys.stdout = _stdout; sys.stderr = _stderr');
+
+        // Render results
+        out.innerHTML = '';
+        const lbl = document.createElement('span');
+        lbl.className = 'out-label';
+        lbl.textContent = 'Output';
+        out.appendChild(lbl);
+
+        const txt = document.createElement('pre');
+        let body = (stdout || '') + (stderr || '');
+        if (runErr) {
+          txt.className = 'err';
+          body += (body ? '\n' : '') + String(runErr.message || runErr).split('\n').slice(-6).join('\n');
+        }
+        txt.textContent = body.trim() || '(no text output)';
+        out.appendChild(txt);
+
+        if (svgs && svgs.length) {
+          const holder = document.createElement('div');
+          holder.className = 'svg-holder';
+          svgs.forEach(s => { holder.innerHTML += s; });
+          out.appendChild(holder);
+        }
+        out.classList.add('show');
+      } catch (fatal) {
+        out.innerHTML = '<span class="out-label">Output</span>' +
+          '<pre class="err">Runtime failed to load: ' +
+          String(fatal.message || fatal) + '</pre>';
+        out.classList.add('show');
+        setStatus('failed', 'Runtime failed to load.', 'بارگذاری محیط اجرا ناموفق بود.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = label;
+      }
+    }
+
+    /* ---- Reset a Live cell to its original code ---- */
+    function resetCell(btn) {
+      const wrap = btn.closest('.code-wrap');
+      if (wrap._cm && wrap._initialCode != null) {
+        wrap._cm.setValue(wrap._initialCode);
+      }
+      const out = wrap.querySelector('.cell-output');
+      if (out) { out.classList.remove('show'); out.innerHTML = ''; }
+    }
+
+    /* ---- Restore saved preferences + build editors ---- */
     window.addEventListener('DOMContentLoaded', () => {
       setTheme(localStorage.getItem('theme') || 'dark');
       if (localStorage.getItem('lang') === 'fa') toggleLang();
-      Prism.highlightAll();
+      initEditors();
     });
   </script>
 </body>
